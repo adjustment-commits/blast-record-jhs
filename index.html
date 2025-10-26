@@ -142,8 +142,8 @@ select.grade {
       <tr>
         <td>
           <select class="grade">
-            <option value="1年">1年</option>
-            <option value="2年" selected>2年</option>
+            <option value="1年" selected>1年</option>
+            <option value="2年">2年</option>
             <option value="3年">3年</option>
           </select>
         </td>
@@ -202,7 +202,7 @@ document.getElementById("addRowBtn").addEventListener("click", () => {
   const newRow = document.createElement("tr");
   newRow.innerHTML = `
     <td><select class="grade">
-      <option value="1年">1年</option>
+      <option value="1年" selected>1年</option>
       <option value="2年">2年</option>
       <option value="3年">3年</option></select>
     </td>

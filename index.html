@@ -130,33 +130,29 @@ th {
   color: #333;
 }
 
-/* --- 入力フィールド最適化 --- */
+/* --- テーブル列の幅調整（学年と同じ比率） --- */
+#blastTable th,
+#blastTable td {
+  width: 12%;        /* ← 全列ほぼ均等。Safariで収まる黄金値 */
+}
+
+#blastTable th:nth-child(2),
+#blastTable td:nth-child(2) {
+  width: 18%;        /* 氏名だけ少し広め */
+}
+
+/* --- 入力フィールドをセル幅に完全フィット --- */
 #blastTable input[type="text"],
 #blastTable input[type="number"],
 #blastTable select.grade {
-  width: 95%;
-  max-width: 120px;
+  width: 90%;
+  max-width: none;
   box-sizing: border-box;
-  padding: 4px 6px;
-  font-size: 0.85rem;
+  padding: 3px 5px;
+  font-size: 0.8rem;
   border: 1px solid #ccc;
   border-radius: 3px;
 }
-
-/* --- 列幅調整（全体が自然に収まる） --- */
-#blastTable th:nth-child(1),
-#blastTable td:nth-child(1) { width: 10%; }  /* 学年 */
-#blastTable th:nth-child(2),
-#blastTable td:nth-child(2) { width: 18%; }  /* 氏名 */
-#blastTable th:nth-child(3),
-#blastTable td:nth-child(3),
-#blastTable th:nth-child(4),
-#blastTable td:nth-child(4),
-#blastTable th:nth-child(5),
-#blastTable td:nth-child(5),
-#blastTable th:nth-child(6),
-#blastTable td:nth-child(6) { width: 18%; }
-
 /* --- ボタン --- */
 button {
   background: #009e60;
@@ -197,6 +193,10 @@ canvas {
   th, td { font-size: 0.8rem; padding: 4px; }
   button { padding: 6px 12px; font-size: 0.8rem; }
 }
+
+html, body {
+  overflow-anchor: none; /* Safariで再描画時に微振動する問題を防止 */
+}  
 </style>
 </head>
 

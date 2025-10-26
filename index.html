@@ -282,44 +282,43 @@ document.addEventListener("change", e => {
   if (e.target.classList.contains("grade")) applyGradeToRow(e.target.closest("tr"));
 });
 
-// === PWA対応：選手追加・削除 ===
+// === PWA対応：選手追加・削除（iPad二重発火防止） ===
 const addBtn = document.getElementById("addRowBtn");
 const removeBtn = document.getElementById("removeRowBtn");
 
-// iPad / PWA対応：クリック・タップ両対応イベント
-["click", "pointerup", "touchend"].forEach(ev => {
-  addBtn.addEventListener(ev, () => {
-    const newRow = document.createElement("tr");
-    newRow.innerHTML = `
-      <td><select class="grade">
-        <option value="1年" selected>1年</option>
-        <option value="2年">2年</option>
-        <option value="3年">3年</option></select>
-      </td>
-      <td><input type="text"></td>
-      <td><input type="number" step="0.1" class="batSpeed"></td>
-      <td><input type="number" step="0.1" class="attackAngle"></td>
-      <td><input type="number" step="0.001" class="timeContact"></td>
-      <td class="refSpeed">-</td>`;
-    const commentRow = document.createElement("tr");
-    commentRow.className = "comment-row";
-    commentRow.innerHTML = `<td colspan="6" class="comment">-</td>`;
-    tableBody.appendChild(newRow);
-    tableBody.appendChild(commentRow);
-    applyGradeToRow(newRow);
-  });
+addBtn.addEventListener("click", e => {
+  e.preventDefault();
+  const newRow = document.createElement("tr");
+  newRow.innerHTML = `
+    <td><select class="grade">
+      <option value="1年" selected>1年</option>
+      <option value="2年">2年</option>
+      <option value="3年">3年</option></select>
+    </td>
+    <td><input type="text"></td>
+    <td><input type="number" step="0.1" class="batSpeed"></td>
+    <td><input type="number" step="0.1" class="attackAngle"></td>
+    <td><input type="number" step="0.001" class="timeContact"></td>
+    <td class="refSpeed">-</td>`;
+  const commentRow = document.createElement("tr");
+  commentRow.className = "comment-row";
+  commentRow.innerHTML = `<td colspan="6" class="comment">-</td>`;
+  tableBody.appendChild(newRow);
+  tableBody.appendChild(commentRow);
+  applyGradeToRow(newRow);
+});
 
-  removeBtn.addEventListener(ev, () => {
-    const rows = Array.from(document.querySelectorAll("#blastTable tbody tr"));
-    if (rows.length < 2) return;
-    const lastComment = rows.pop();
-    const lastRow = rows.pop();
-    if (lastRow && lastComment && lastComment.classList.contains("comment-row")) {
-      lastRow.remove();
-      lastComment.remove();
-      updateAverages();
-    }
-  });
+removeBtn.addEventListener("click", e => {
+  e.preventDefault();
+  const rows = Array.from(document.querySelectorAll("#blastTable tbody tr"));
+  if (rows.length < 2) return;
+  const lastComment = rows.pop();
+  const lastRow = rows.pop();
+  if (lastRow && lastComment && lastComment.classList.contains("comment-row")) {
+    lastRow.remove();
+    lastComment.remove();
+    updateAverages();
+  }
 });
 
 // === 入力イベント ===
@@ -351,51 +350,55 @@ function updateRow(row) {
 function evaluate(batSpeed, attack, ttc) {
   let comment = "";
 
-  // 出力レベル
-  if (batSpeed < 70)
-    comment = "まだ力の伝わり方が小さい。下半身から順に動かせるように意識しよう。";
-  else if (batSpeed < 75)
-    comment = "出力は出てきているが、力みが残っている。下半身主導を保ちたい。";
-  else if (batSpeed < 82)
-    comment = "出力が安定し始めている。軸のブレを抑えて角度との整合を意識。";
-  else if (batSpeed < 88)
-    comment = "出力も安定し、スイングの再現性が上がっている。体幹の連動をキープ。";
-  else
-    comment = "非常に強いスイングができている。順序を保ち、再現性を磨こう。";
+  // === Bat Speed × Attack Angle ===
+  if (batSpeed < 75 && attack < 6)
+    comment = "出力不足で軌道も低め。下半身の始動が遅れ、力がヘッドに伝わっていない。";
+  else if (batSpeed < 75 && attack > 15)
+    comment = "出力が小さいまま上体で持ち上げている。胸郭の開きすぎに注意。";
+  else if (batSpeed >= 75 && batSpeed < 85 && attack >= 6 && attack <= 12)
+    comment = "出力と角度のバランスが良い。軸の安定と骨盤主導をキープしよう。";
+  else if (batSpeed >= 85 && attack >= 13 && attack <= 18)
+    comment = "強いスイングで飛距離が出るゾーン。胸郭の可動性とねじれの精度を磨きたい。";
+  else if (attack > 18)
+    comment = "軌道が立ちすぎてフライ傾向。胸郭の開きを遅らせ、骨盤の先行を意識。";
+  else if (attack < 0)
+    comment = "軌道が下がり気味でゴロ傾向。下半身からの押し込みを強化。";
 
-  // アタックアングル
-  if (!isNaN(attack)) {
-    if (attack < -2)
-      comment += "／軌道が下がり気味。上体を早く倒さず、股関節の入りで下から順に動こう。";
-    else if (attack < 5)
-      comment += "／角度がやや低い。骨盤の先行を意識して押し出す形を作りたい。";
-    else if (attack <= 15)
-      comment += "／角度バランスは良好。下半身と上半身の切り返しタイミングを維持。";
-    else if (attack <= 20)
-      comment += "／角度がやや立ちすぎ。上体の起こしを遅らせる意識を持とう。";
-    else
-      comment += "／軌道が立ちすぎて上方向に抜けやすい。胸郭の柔軟性を取り戻そう。";
-  }
-
-  // タイム・トゥ・コンタクト
+  // === Attack Angle × TTC ===
   if (!isNaN(ttc)) {
-    if (ttc > 0.23)
-      comment += "／始動が遅い。リズムを早く掴み、トップを早めにセット。";
-    else if (ttc > 0.21)
-      comment += "／始動がやや遅め。下半身のリズムを優先しよう。";
-    else if (ttc < 0.17)
-      comment += "／反応が速い。順序を崩さず正確にボールを捉えたい。";
-    else
-      comment += "／反応リズムは良好。タイミングが安定している。";
+    if (attack >= 6 && attack <= 12 && ttc >= 0.17 && ttc <= 0.21)
+      comment += "／角度とタイミングの同期が良く、再現性の高いスイング。";
+    else if (attack >= 6 && attack <= 12 && ttc > 0.22)
+      comment += "／始動が遅く、リリースタイミングの把握に課題。骨盤リズムを早めよう。";
+    else if (attack >= 13 && attack <= 18 && ttc < 0.18)
+      comment += "／反応が速すぎて力みが出やすい。もう少し溜めを作りたい。";
+    else if (attack < 5 && ttc < 0.2)
+      comment += "／上半身主導の突っ込み傾向。下半身のリードを取り戻そう。";
   }
 
-  // 総評（理想とは言わない）
-  if (batSpeed >= 85 && attack >= 5 && attack <= 15 && ttc <= 0.21 && ttc >= 0.17)
-    comment += "／動作の順序・角度・タイミングが整い、力の伝達がスムーズ。再現性が高いスイング。";
-  else if (batSpeed >= 80 && attack >= 0 && attack <= 18 && ttc <= 0.22 && ttc >= 0.16)
-    comment += "／動作の秩序が見え始めている。下半身と胸郭の連動をさらに磨こう。";
-  else if (batSpeed >= 75 && attack > 10)
-    comment += "／出力はあるが順序が追いついていない。骨盤から胸郭への伝達を見直したい。";
+  // === Bat Speed × TTC ===
+  if (!isNaN(batSpeed) && !isNaN(ttc)) {
+    if (batSpeed < 75 && ttc > 0.22)
+      comment += "／出力も反応も遅いタイプ。基礎筋力と骨盤リズムの両立が必要。";
+    else if (batSpeed >= 75 && batSpeed < 85 && ttc > 0.22)
+      comment += "／出力は中程度だが始動が遅い。トップ形成と股関節リズムを改善。";
+    else if (batSpeed >= 85 && ttc > 0.22)
+      comment += "／出力は高いが反応が遅い。準備段階のリズム調整を優先。";
+    else if (batSpeed >= 85 && ttc < 0.18)
+      comment += "／強く速いスイング。再現性を高めるために脱力フェーズを意識。";
+    else if (batSpeed < 80 && ttc < 0.18)
+      comment += "／反応は速いが出力不足。下半身主導で力の通り道を作ろう。";
+  }
+
+  // === フィジカル課題マッピング ===
+  if (batSpeed < 75 && attack < 5)
+    comment += "／課題：股関節主導・地面反力の活用不足。ヒップイン系ドリル推奨。";
+  else if (batSpeed >= 75 && batSpeed < 85 && ttc > 0.22)
+    comment += "／課題：軸安定と腹斜筋リズム。骨盤先行と胸郭遅延を強化。";
+  else if (batSpeed >= 85 && attack > 15)
+    comment += "／課題：胸郭制御と肩甲骨締め。ねじれ制動ドリル推奨。";
+  else if (batSpeed >= 80 && attack >= 6 && attack <= 12 && ttc < 0.21)
+    comment += "／現状：出力・角度・反応が揃った理想的連動。再現性向上フェーズ。";
 
   return comment;
 }

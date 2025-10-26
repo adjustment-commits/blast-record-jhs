@@ -189,7 +189,7 @@ document.addEventListener("input", e => {
   }
 });
 
-// === 学年を反映する関数（イベント不要で即反映） ===
+// === 学年を反映する関数 ===
 function applyGradeToRow(row) {
   const select = row.querySelector(".grade");
   const commentRow = row.nextElementSibling;
@@ -203,7 +203,7 @@ function applyGradeToRow(row) {
   commentCell.textContent = `【${select.value}】 ${currentText}`;
 }
 
-// === 初期反映（ページ読み込み時に全行へ適用） ===
+// === 初期反映 ===
 window.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("#tableBody tr:not(.comment-row)").forEach(applyGradeToRow);
 });
@@ -222,7 +222,7 @@ document.getElementById("addRowBtn").addEventListener("click", () => {
     <td>
       <select class="grade">
         <option value="1年">1年</option>
-        <option value="2年">2年</option>
+        <option value="2年" selected>2年</option>
         <option value="3年">3年</option>
       </select>
     </td>
@@ -239,7 +239,7 @@ document.getElementById("addRowBtn").addEventListener("click", () => {
   tableBody.appendChild(newRow);
   tableBody.appendChild(commentRow);
 
-  // ← 新規行にも即適用
+  // 追加した行にも反映
   applyGradeToRow(newRow);
 });
 
@@ -335,7 +335,7 @@ document.getElementById("removeRowBtn").addEventListener("click", () => {
     lastComment.remove();
     updateAverages();
   }
-}););
+});
 </script>
 </body>
 </html>

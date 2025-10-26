@@ -130,12 +130,12 @@ th {
   color: #333;
 }
 
-/* --- テーブル列の幅調整（学年と同じ比率） --- */
+/* --- テーブル列の幅調整（全列同一幅） --- */
 #blastTable th,
 #blastTable td {
-  width: 12%;        /* ← 全列ほぼ均等。Safariで収まる黄金値 */
+  width: 16.6%;  /* 100 ÷ 6列 = 約16.6% */
 }
-
+  
 #blastTable th:nth-child(2),
 #blastTable td:nth-child(2) {
   width: 18%;        /* 氏名だけ少し広め */

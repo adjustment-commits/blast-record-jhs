@@ -29,10 +29,13 @@ if ('serviceWorker' in navigator) {
 
 /* --- 全体共通リセット --- */
 html, body {
+  position: fixed;
   width: 100%;
-  max-width: 100%;
   overflow-x: hidden !important;
+  overflow-y: auto;
+  touch-action: pan-y;  /* 縦だけ許可 */
   overscroll-behavior-x: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 *,

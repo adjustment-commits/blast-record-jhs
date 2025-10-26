@@ -145,8 +145,9 @@ button:hover { background: #00784a; }
   </table>
 
   <div style="text-align:center;">
-    <button id="addRowBtn">＋ 選手を追加</button>
-  </div>
+  <button id="addRowBtn">＋ 選手を追加</button>
+  <button id="removeRowBtn" style="background:#d62828;">− 選手を削除</button>
+　</div>
 
   <div id="averageBox">
     <span id="avgAll" class="mid">全体平均：-- km/h　｜　参考：-- km/h</span>
@@ -283,6 +284,19 @@ function downloadCSV() {
   link.download = `${team}_BLAST_${date}.csv`;
   link.click();
 }
+
+  // === 最後の選手を削除 ===
+document.getElementById("removeRowBtn").addEventListener("click", () => {
+  const rows = Array.from(document.querySelectorAll("#blastTable tbody tr"));
+  if (rows.length < 2) return; // 最低1セットは残す
+  const lastComment = rows.pop();
+  const lastRow = rows.pop();
+  if (lastRow && lastComment && lastComment.classList.contains("comment-row")) {
+    lastRow.remove();
+    lastComment.remove();
+    updateAverages();
+  }
+});
 </script>
 </body>
 </html>

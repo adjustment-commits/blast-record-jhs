@@ -422,14 +422,20 @@ if (!isNaN(ttc)) {
     body = "全体のバランス良好。反応速度と再現性の向上フェーズ。";
   }
 
-  // --- 意図的修正リスク ---
-  if (attack < 7)
-    risk = "角度を上げようとすると上体が起き、フライが増える。下半身主導で押し出す。";
-  else if (attack > 15)
-    risk = "角度を抑えようとすると力が前で切れる。押し込み位置を意識。";
-  else
-    risk = "良い状態。スイングリズムを崩さないことが重要。";
+ // --- 意図的修正リスク ---
+if (attack < 7)
+  risk = "ゴロ修正で角度を上げようとすると、上体が早く起きてフライが増える。押し出しを意識。";
+else if (attack > 15)
+  risk = "フライ修正でスイングを浅くすると、力が前で切れる。押し込み位置を意識。";
+else if (batSpeed >= 80 && attack >= 7 && attack <= 15)
+  risk = "計測上は理想だが、実戦では『判断→始動』の遅れで差し込まれる傾向。反応スピードを意識。";
+else
+  risk = "リズムや間の乱れで一気に崩れる。好調時の再現リズムを優先。";
 
+// --- 追加条件：TTC遅れによるリスク補足 ---
+if (!isNaN(ttc) && ttc > 0.19) {
+  risk += " 始動が遅れがちで、差し込まれるリスクが高い。打ち出しの準備を早めたい。";
+}
   return `
     <span class="type comment-type-hit">［打球傾向］${hit}</span>
     <span class="type comment-type-move">［動作傾向］${move}</span>
@@ -585,6 +591,7 @@ function loadData() {
 
   alert("保存データを復元しました。");
   updateAverages();
+  window.scrollTo(0, 0);
 }
 
 function resetData() {

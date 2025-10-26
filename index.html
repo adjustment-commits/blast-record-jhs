@@ -1,0 +1,314 @@
+# blast-record-jhs<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLASTスイング記録｜新庄中野球部</title>
+
+<!-- ✅ PWA設定 -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#009e60">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BLAST記録">
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js');
+  });
+}
+</script>
+
+<style>
+body {
+  font-family: "Noto Sans JP", sans-serif;
+  background: #fff;
+  color: #222;
+  margin: 0;
+  padding: 10px;
+}
+
+h1 {
+  text-align: center;
+  color: #009e60;
+  margin: 10px 0;
+  font-size: 1.4rem;
+}
+
+#metaBox {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+#metaBox input {
+  padding: 6px 10px;
+  margin: 4px;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+th {
+  background: #e8f5e9;
+  color: #006b4b;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+input[type="number"], input[type="text"] {
+  width: 90%;
+  padding: 4px;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.comment-row td {
+  background: #fafafa;
+  font-size: 0.8rem;
+  text-align: left;
+  line-height: 1.6;
+  padding: 6px 10px;
+  border-top: none;
+  color: #333;
+}
+
+button {
+  background: #009e60;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  margin: 8px;
+}
+
+button:hover { background: #00784a; }
+
+#averageBox {
+  text-align: center;
+  margin-top: 15px;
+  font-weight: bold;
+  color: #006b4b;
+  line-height: 1.8;
+  transition: color 0.3s;
+}
+
+.high { color: #009e60; }
+.mid { color: #333; }
+.low { color: #d62828; }
+
+#chart {
+  margin: 20px auto;
+  display: block;
+  width: 90%;
+  max-width: 420px;
+  height: 200px;
+}
+</style>
+</head>
+
+<body>
+<div id="container">
+  <h1>BLASTスイング記録</h1>
+
+  <div id="metaBox">
+    <input type="text" id="teamName" value="新庄中野球部" placeholder="チーム名">
+    <input type="date" id="recordDate">
+  </div>
+
+  <table id="blastTable">
+    <thead>
+      <tr>
+        <th>学年・氏名</th>
+        <th>Bat Speed<br>(km/h)</th>
+        <th>Attack Angle<br>(°)</th>
+        <th>Time to Contact<br>(s)</th>
+        <th>参考ヘッドスピード<br>(km/h)</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+      <tr>
+        <td><input type="text" value="2年 石井"></td>
+        <td><input type="number" step="0.1" class="batSpeed"></td>
+        <td><input type="number" step="0.1" class="attackAngle"></td>
+        <td><input type="number" step="0.001" class="timeContact"></td>
+        <td class="refSpeed">-</td>
+      </tr>
+      <tr class="comment-row">
+        <td colspan="5" class="comment">-</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="text-align:center;">
+    <button id="addRowBtn">＋ 選手を追加</button>
+  </div>
+
+  <div id="averageBox">
+    <span id="avgAll" class="mid">全体平均：-- km/h　｜　参考：-- km/h</span><br>
+  </div>
+
+  <canvas id="chart"></canvas>
+
+  <div style="text-align:center;">
+    <button onclick="downloadCSV()">CSVダウンロード</button>
+  </div>
+</div>
+
+<script>
+// === 初期日付設定 ===
+document.getElementById("recordDate").valueAsDate = new Date();
+
+const ctx = document.getElementById("chart").getContext("2d");
+const tableBody = document.getElementById("tableBody");
+
+// === 入力イベント ===
+document.addEventListener("input", e => {
+  if (e.target.matches(".batSpeed, .attackAngle, .timeContact")) {
+    const row = e.target.closest("tr");
+    updateRow(row);
+    updateAverages();
+  }
+});
+
+// === 行追加 ===
+document.getElementById("addRowBtn").addEventListener("click", () => {
+  const newRow = document.createElement("tr");
+  newRow.innerHTML = `
+    <td><input type="text" value=""></td>
+    <td><input type="number" step="0.1" class="batSpeed"></td>
+    <td><input type="number" step="0.1" class="attackAngle"></td>
+    <td><input type="number" step="0.001" class="timeContact"></td>
+    <td class="refSpeed">-</td>`;
+  const commentRow = document.createElement("tr");
+  commentRow.className = "comment-row";
+  commentRow.innerHTML = `<td colspan="5" class="comment">-</td>`;
+  tableBody.appendChild(newRow);
+  tableBody.appendChild(commentRow);
+});
+
+// === 行更新 ===
+function updateRow(row) {
+  const batSpeed = parseFloat(row.querySelector(".batSpeed")?.value);
+  const attack = parseFloat(row.querySelector(".attackAngle")?.value);
+  const ttc = parseFloat(row.querySelector(".timeContact")?.value);
+  const refCell = row.querySelector(".refSpeed");
+  const commentRow = row.nextElementSibling;
+
+  if (!isNaN(batSpeed)) refCell.textContent = (batSpeed * 1.08).toFixed(1);
+  else refCell.textContent = "-";
+
+  if (!isNaN(batSpeed) && !isNaN(attack))
+    commentRow.querySelector(".comment").textContent = evaluate(batSpeed, attack, ttc);
+  else commentRow.querySelector(".comment").textContent = "-";
+}
+
+// === コメント生成 ===
+function evaluate(batSpeed, attack, ttc) {
+  let comment = "";
+
+  if (batSpeed < 70)
+    comment = "まだ力の伝わり方が小さいけど、しっかり振ろうとする意識は良い。下半身から動けるようにしよう。";
+  else if (batSpeed < 78)
+    comment = "振る力は出てきているが、体の軸が少しブレる。体幹を安定させて再現性を上げよう。";
+  else if (batSpeed < 88)
+    comment = "出力も安定し、角度とのバランスも良い。スイングタイミングを磨く段階。";
+  else
+    comment = "強いスイングができている。動きの順序を保ち、正確な当たりを狙おう。";
+
+  if (attack < 0) comment += "／少し下がり気味。上体を我慢して下半身から。";
+  else if (attack > 18) comment += "／上に抜けやすい。胸郭を柔らかくして角度を整えよう。";
+  else if (attack > 12) comment += "／強打志向。脚の安定を保とう。";
+
+  if (!isNaN(ttc)) {
+    if (ttc > 0.21) comment += "／始動が遅い。リズムを早く掴もう。";
+    else if (ttc < 0.17) comment += "／反応は速い。順序を崩さず正確に。";
+  }
+
+  if (batSpeed < 70) comment += "／フィジカル：股関節と体幹を強化。";
+  else if (attack < 0) comment += "／フィジカル：胸まわりの柔軟性を。";
+  else if (attack > 15) comment += "／フィジカル：下半身主導を磨こう。";
+  else comment += "／フィジカル：安定した体幹維持を。";
+
+  if (batSpeed < 75 && isNaN(ttc))
+    comment += " 初めての計測としては良い。数字よりも動きの感覚を大事に。";
+
+  return comment;
+}
+
+// === 平均更新 ===
+function updateAverages() {
+  const speeds = Array.from(document.querySelectorAll(".batSpeed"))
+    .map(i => parseFloat(i.value))
+    .filter(v => !isNaN(v));
+  if (!speeds.length) return;
+
+  const avg = (speeds.reduce((a,b)=>a+b,0)/speeds.length).toFixed(1);
+  const avgRef = (avg * 1.08).toFixed(1);
+  document.getElementById("avgAll").innerHTML = `全体平均：${avg} km/h　｜　参考：${avgRef} km/h`;
+  drawChart(avg);
+}
+
+// === 棒グラフ ===
+function drawChart((avgAll, avg2, avg1) {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  const value = parseFloat(avgAll) || 0;
+  const maxVal = 100;
+  const height = (ctx.canvas.height - 30) * (value / maxVal);
+  ctx.fillStyle = value >= 80 ? "#009e60" : value >= 70 ? "#555" : "#d62828";
+  ctx.fillRect(100, ctx.canvas.height - height - 10, 80, height);
+  ctx.fillStyle = "#000";
+  ctx.textAlign = "center";
+  ctx.font = "14px sans-serif";
+  ctx.fillText("全体平均", 140, ctx.canvas.height - 2);
+  ctx.fillText(value.toFixed(1), 140, ctx.canvas.height - height - 15);
+}
+
+// === CSV出力 ===
+function downloadCSV() {
+  const team = document.getElementById("teamName").value || "未設定";
+  const date = document.getElementById("recordDate").value || "未設定";
+
+  let csv = `チーム名：${team},日付：${date}\n`;
+  csv += "氏名,BatSpeed(km/h),AttackAngle(°),TimeToContact(s),参考ヘッドスピード(km/h),コメント\n";
+
+  document.querySelectorAll("#blastTable tbody tr:not(.comment-row)").forEach(row=>{
+    const name = row.querySelector("input[type='text']").value;
+    const bs = row.querySelector(".batSpeed")?.value || "";
+    const aa = row.querySelector(".attackAngle")?.value || "";
+    const ttc = row.querySelector(".timeContact")?.value || "";
+    const ref = row.querySelector(".refSpeed")?.textContent || "";
+    const comment = row.nextElementSibling?.querySelector(".comment")?.textContent.replace(/,/g,"、") || "";
+    csv += `${name},${bs},${aa},${ttc},${ref},"${comment}"\n`;
+  });
+
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${team}_BLAST_${date}.csv`;
+  link.click();
+}
+</script>
+</body>
+</html>
+

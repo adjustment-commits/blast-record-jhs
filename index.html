@@ -204,6 +204,29 @@ function handleGradeUpdate(e) {
     }
   }
 }
+
+// ✅ ページ読み込み時に全selectへ初期反映
+window.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".grade").forEach(select => {
+    select.dispatchEvent(new Event("click"));
+    select.dispatchEvent(new Event("change"));
+  });
+  // ←この行を追加！
+  setTimeout(() => document.querySelectorAll(".grade").forEach(select => {
+    select.dispatchEvent(new Event("change"));
+  }), 200);
+});
+// 新しい行を追加したときも同じ初期反映を行う
+const observer = new MutationObserver(mutations => {
+  mutations.forEach(m => {
+    m.addedNodes.forEach(node => {
+      if (node.querySelector && node.querySelector(".grade")) {
+        const select = node.querySelector(".grade");
+        setTimeout(() => select.dispatchEvent(new Event("change")), 50);
+      }
+    });
+  });
+observer.observe(tableBody, { childList: true });});
 // === 選手追加ボタン ===
 document.getElementById("addRowBtn").addEventListener("click", () => {
   const newRow = document.createElement("tr");

@@ -28,64 +28,118 @@ body {
   background: #fff;
   color: #222;
   margin: 0;
-  padding: 10px;
 }
+
+main {
+  width: 95%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 15px 10px 60px;
+}
+
 h1 {
   text-align: center;
   color: #009e60;
-  margin: 10px 0;
+  margin: 10px 0 20px;
   font-size: 1.4rem;
 }
-#metaBox { text-align: center; margin-bottom: 15px; }
-#metaBox input {
-  padding: 6px 10px; margin: 4px; font-size: 0.9rem;
-  border: 1px solid #ccc; border-radius: 4px;
+
+#metaBox {
+  text-align: center;
+  margin-bottom: 15px;
 }
+#metaBox input {
+  padding: 6px 10px;
+  margin: 4px;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
 table {
-  width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 20px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  table-layout: fixed;
 }
 th, td {
-  border: 1px solid #ccc; padding: 6px;
-  text-align: center; vertical-align: middle;
+  border: 1px solid #ccc;
+  padding: 6px;
+  text-align: center;
+  vertical-align: middle;
 }
 th {
-  background: #e8f5e9; color: #006b4b;
-  position: sticky; top: 0; z-index: 2;
+  background: #e8f5e9;
+  color: #006b4b;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 .comment-row td {
-  background: #fafafa; font-size: 0.8rem;
-  text-align: left; line-height: 1.6;
-  padding: 6px 10px; border-top: none; color: #333;
+  background: #fafafa;
+  font-size: 0.8rem;
+  text-align: left;
+  line-height: 1.6;
+  padding: 6px 10px;
+  border-top: none;
+  color: #333;
 }
+
 button {
-  background: #009e60; color: #fff;
-  border: none; padding: 8px 16px;
-  border-radius: 4px; cursor: pointer;
-  font-weight: bold; margin: 8px;
+  background: #009e60;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  margin: 8px;
 }
 button:hover { background: #00784a; }
+
 #averageBox {
-  text-align: center; margin-top: 15px;
-  font-weight: bold; color: #006b4b; line-height: 1.8;
+  text-align: center;
+  margin-top: 15px;
+  font-weight: bold;
+  color: #006b4b;
+  line-height: 1.8;
+}
+
+/* === グラフ用 === */
+.chart-container {
+  width: 100%;
+  max-width: 700px;
+  margin: 30px auto;
+  position: relative;
 }
 canvas {
+  width: 100% !important;
+  height: auto !important;
   display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 3 / 1;
-  margin: 20px auto;
-  max-width: 700px;
 }
+
+/* === セレクトなど === */
 select.grade {
-  width: 95%; padding: 4px; font-size: 0.9rem;
-  border: 1px solid #ccc; border-radius: 4px;
+  width: 95%;
+  padding: 4px;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* === レスポンシブ === */
+@media (max-width: 600px) {
+  th, td { font-size: 0.8rem; padding: 4px; }
+  button { padding: 6px 12px; font-size: 0.8rem; }
 }
 </style>
 </head>
 
 <body>
-
+<main>
 <h1>BLASTスイング記録</h1>
+
 <div id="metaBox">
   <input type="text" id="teamName" value="新庄中野球部" placeholder="チーム名">
   <input type="date" id="recordDate">
@@ -132,15 +186,18 @@ select.grade {
   <span id="avg1">1年：-- km/h</span>
 </div>
 
-<!-- 上段：平均棒グラフ -->
-<canvas id="barChart"></canvas>
+<div class="chart-container">
+  <canvas id="barChart"></canvas>
+</div>
 
-<!-- 下段：散布図 -->
-<canvas id="scatterChart"></canvas>
+<div class="chart-container">
+  <canvas id="scatterChart"></canvas>
+</div>
 
 <div style="text-align:center;">
   <button onclick="downloadCSV()">CSVダウンロード</button>
 </div>
+</main>
 
 <script>
 document.getElementById("recordDate").valueAsDate = new Date();
@@ -271,6 +328,7 @@ function updateAverages() {
 
 // === 上段：棒グラフ ===
 function drawBarChart(avgAll, grades) {
+  adjustCanvasSize();
   barCtx.clearRect(0, 0, barCtx.canvas.width, barCtx.canvas.height);
   const data = [];
   if (avgAll !== "--") data.push({label:"全体", value:parseFloat(avgAll), color:"#009e60"});
@@ -294,6 +352,7 @@ function drawBarChart(avgAll, grades) {
 
 // === 下段：散布図 ===
 function drawScatter(rows){
+  adjustCanvasSize();
   scatterCtx.clearRect(0,0,scatterCtx.canvas.width,scatterCtx.canvas.height);
   const xMin=-10,xMax=30,yMin=50,yMax=110;
   const pad=40;
@@ -338,6 +397,14 @@ function downloadCSV(){
   link.download="blast_record.csv";
   link.click();
 }
-</script>
-</body>
-</html>
+
+// === サイズ調整 ===
+function adjustCanvasSize() {
+  const charts = document.querySelectorAll("canvas");
+  charts.forEach(c => {
+    const parentWidth = c.parentElement.offsetWidth;
+    c.width = parentWidth;
+    c.height = parentWidth * 0.6;
+  });
+}
+window.addEventListener('load', adjustCanvasSize

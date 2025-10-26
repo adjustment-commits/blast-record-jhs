@@ -45,10 +45,11 @@ html, body {
 }
 
 main {
-  width: 94%;
+  width: 100%;
   max-width: 800px;
   margin: 0 auto;
   padding: 15px 10px 60px;
+  overflow-x: hidden;
 }
 
 h1 {
@@ -71,27 +72,22 @@ h1 {
 }
 
 #blastTable {
-  display: block;
+  display: table;
   width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  border-collapse: separate !important;
+  border-collapse: collapse;
   border-spacing: 0;
   margin: 0 auto 20px;
   table-layout: fixed;
+  overflow-x: hidden; /* ← autoではなくhiddenに */
+  -webkit-overflow-scrolling: touch;
 }
-
-table {
-  width: 100%;
-  border-spacing: 0;
-  font-size: 0.9rem;
-}
-
 th, td {
   border: 1px solid #ccc;
   padding: 6px;
   text-align: center;
   vertical-align: middle;
+  word-break: keep-all;
+  white-space: normal;
 }
 
 th {

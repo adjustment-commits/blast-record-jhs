@@ -180,6 +180,7 @@ document.getElementById("recordDate").valueAsDate = new Date();
 const ctx = document.getElementById("chart").getContext("2d");
 const tableBody = document.getElementById("tableBody");
 
+// === 入力イベント ===
 document.addEventListener("input", e => {
   if (e.target.matches(".batSpeed, .attackAngle, .timeContact")) {
     const row = e.target.closest("tr");
@@ -188,45 +189,32 @@ document.addEventListener("input", e => {
   }
 });
 
-// === 学年選択時の反映（同じ学年再選択もOK） ===
-document.addEventListener("change", handleGradeUpdate);
-document.addEventListener("click", handleGradeUpdate);
+// === 学年を反映する関数（イベント不要で即反映） ===
+function applyGradeToRow(row) {
+  const select = row.querySelector(".grade");
+  const commentRow = row.nextElementSibling;
+  if (!select || !commentRow || !commentRow.classList.contains("comment-row")) return;
 
-function handleGradeUpdate(e) {
-  if (e.target.classList.contains("grade")) {
-    const row = e.target.closest("tr");
-    const selected = e.target.value;
-    const commentRow = row.nextElementSibling;
-    if (commentRow && commentRow.classList.contains("comment-row")) {
-      const commentCell = commentRow.querySelector(".comment");
-      const currentText = commentCell.textContent.replace(/^【.*?】/, "").trim();
-      commentCell.textContent = `【${selected}】 ${currentText || "-"}`;
-    }
-  }
+  const commentCell = commentRow.querySelector(".comment");
+  const currentText = (commentCell.textContent || "")
+    .replace(/^【.*?】\s*/,"")
+    .trim() || "-";
+
+  commentCell.textContent = `【${select.value}】 ${currentText}`;
 }
 
-// ✅ ページ読み込み時に全selectへ初期反映
+// === 初期反映（ページ読み込み時に全行へ適用） ===
 window.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll(".grade").forEach(select => {
-    select.dispatchEvent(new Event("click"));
-    select.dispatchEvent(new Event("change"));
-  });
-  // ←この行を追加！
-  setTimeout(() => document.querySelectorAll(".grade").forEach(select => {
-    select.dispatchEvent(new Event("change"));
-  }), 200);
+  document.querySelectorAll("#tableBody tr:not(.comment-row)").forEach(applyGradeToRow);
 });
-// 新しい行を追加したときも同じ初期反映を行う
-const observer = new MutationObserver(mutations => {
-  mutations.forEach(m => {
-    m.addedNodes.forEach(node => {
-      if (node.querySelector && node.querySelector(".grade")) {
-        const select = node.querySelector(".grade");
-        setTimeout(() => select.dispatchEvent(new Event("change")), 50);
-      }
-    });
-  });
-observer.observe(tableBody, { childList: true });});
+
+// === 学年変更時にも反映 ===
+document.addEventListener("change", e => {
+  if (e.target.classList.contains("grade")) {
+    applyGradeToRow(e.target.closest("tr"));
+  }
+});
+
 // === 選手追加ボタン ===
 document.getElementById("addRowBtn").addEventListener("click", () => {
   const newRow = document.createElement("tr");
@@ -250,8 +238,12 @@ document.getElementById("addRowBtn").addEventListener("click", () => {
 
   tableBody.appendChild(newRow);
   tableBody.appendChild(commentRow);
+
+  // ← 新規行にも即適用
+  applyGradeToRow(newRow);
 });
 
+// === 評価・換算ロジック ===
 function updateRow(row) {
   const batSpeed = parseFloat(row.querySelector(".batSpeed")?.value);
   const attack = parseFloat(row.querySelector(".attackAngle")?.value);
@@ -300,6 +292,7 @@ function evaluate(batSpeed, attack, ttc) {
   return comment;
 }
 
+// === 平均計算 ===
 function updateAverages() {
   const speeds = Array.from(document.querySelectorAll(".batSpeed"))
     .map(i => parseFloat(i.value))
@@ -316,6 +309,7 @@ function updateAverages() {
   drawChart(avg);
 }
 
+// === グラフ描画 ===
 function drawChart(avgAll) {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   const value = parseFloat(avgAll) || 0;
@@ -333,7 +327,7 @@ function drawChart(avgAll) {
 // === 最後の選手を削除 ===
 document.getElementById("removeRowBtn").addEventListener("click", () => {
   const rows = Array.from(document.querySelectorAll("#blastTable tbody tr"));
-  if (rows.length < 2) return; // 最低1セットは残す
+  if (rows.length < 2) return;
   const lastComment = rows.pop();
   const lastRow = rows.pop();
   if (lastRow && lastComment && lastComment.classList.contains("comment-row")) {
@@ -341,7 +335,7 @@ document.getElementById("removeRowBtn").addEventListener("click", () => {
     lastComment.remove();
     updateAverages();
   }
-});
+}););
 </script>
 </body>
 </html>

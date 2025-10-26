@@ -188,8 +188,11 @@ document.addEventListener("input", e => {
   }
 });
 
-// === 学年選択時の反映 ===
-document.addEventListener("change", e => {
+// === 学年選択時の反映（同じ学年でも反応） ===
+document.addEventListener("change", handleGradeChange);
+document.addEventListener("input", handleGradeChange);
+
+function handleGradeChange(e) {
   if (e.target.classList.contains("grade")) {
     const row = e.target.closest("tr");
     const selected = e.target.value;
@@ -200,8 +203,7 @@ document.addEventListener("change", e => {
       commentCell.textContent = `【${selected}】 ${currentText || "-"}`;
     }
   }
-});
-
+}
 // === 選手追加ボタン ===
 document.getElementById("addRowBtn").addEventListener("click", () => {
   const newRow = document.createElement("tr");

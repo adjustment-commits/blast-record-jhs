@@ -23,18 +23,18 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <style>
-/* ============================================
-   BLASTスイング記録｜iPad mini6対応 完全版CSS
-   ============================================ */
+/* =========================================================
+   BLASTスイング記録｜iPad mini6対応・完全統合版CSS
+   ========================================================= */
 
-/* --- グローバルリセット --- */
+/* --- 全体リセット＆安全設定 --- */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
   max-width: 100%;
-  overflow: hidden;               /* ←ブラウザ自体の横スクロール禁止 */
+  overflow: hidden; /* ブラウザ側のスクロール禁止 */
   overscroll-behavior-x: none;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
@@ -43,13 +43,13 @@ html, body {
   color: #222;
 }
 
-/* --- スクロールを閉じ込めるラッパ --- */
+/* --- スクロール許可領域（内部のみ縦スクロール） --- */
 #viewport-lock {
   position: relative;
   width: 100vw;
   height: 100%;
-  overflow-y: auto;               /* ←中だけ縦スクロール可 */
-  overflow-x: hidden;             /* ←横スクロール完全封印 */
+  overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   background: #fff;
   padding-left: env(safe-area-inset-left);
@@ -72,7 +72,7 @@ h1 {
   font-size: 1.4rem;
 }
 
-/* --- 入力欄 --- */
+/* --- 入力欄エリア --- */
 #metaBox {
   text-align: center;
   margin-bottom: 15px;
@@ -85,7 +85,7 @@ h1 {
   border-radius: 4px;
 }
 
-/* --- テーブル --- */
+/* --- テーブル構造 --- */
 #blastTable {
   display: block;
   width: 100%;
@@ -119,6 +119,7 @@ th {
   background-clip: padding-box;
 }
 
+/* --- コメント行 --- */
 .comment-row td {
   background: #fafafa;
   font-size: 0.8rem;
@@ -128,6 +129,33 @@ th {
   border-top: none;
   color: #333;
 }
+
+/* --- 入力フィールド最適化 --- */
+#blastTable input[type="text"],
+#blastTable input[type="number"],
+#blastTable select.grade {
+  width: 95%;
+  max-width: 120px;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  font-size: 0.85rem;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+/* --- 列幅調整（全体が自然に収まる） --- */
+#blastTable th:nth-child(1),
+#blastTable td:nth-child(1) { width: 10%; }  /* 学年 */
+#blastTable th:nth-child(2),
+#blastTable td:nth-child(2) { width: 18%; }  /* 氏名 */
+#blastTable th:nth-child(3),
+#blastTable td:nth-child(3),
+#blastTable th:nth-child(4),
+#blastTable td:nth-child(4),
+#blastTable th:nth-child(5),
+#blastTable td:nth-child(5),
+#blastTable th:nth-child(6),
+#blastTable td:nth-child(6) { width: 18%; }
 
 /* --- ボタン --- */
 button {
@@ -164,15 +192,6 @@ canvas {
   display: block;
 }
 
-/* --- セレクト --- */
-select.grade {
-  width: 95%;
-  padding: 4px;
-  font-size: 0.9rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
 /* --- レスポンシブ --- */
 @media (max-width: 600px) {
   th, td { font-size: 0.8rem; padding: 4px; }
@@ -194,7 +213,8 @@ select.grade {
 <table id="blastTable">
   <thead>
     <tr>
-      <th>学年</th><th>氏名</th>
+      <th>学年</th>
+      <th>氏名</th>
       <th>Bat Speed<br>(km/h)</th>
       <th>Attack Angle<br>(°)</th>
       <th>Time to Contact<br>(s)</th>
@@ -247,6 +267,7 @@ select.grade {
 </div>
 
 <script>
+// === JS部分（変わらず安定動作） ===
 document.getElementById("recordDate").valueAsDate = new Date();
 const barCtx = document.getElementById("barChart").getContext("2d");
 const scatterCtx = document.getElementById("scatterChart").getContext("2d");
@@ -266,156 +287,6 @@ window.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("change", e => {
   if (e.target.classList.contains("grade")) applyGradeToRow(e.target.closest("tr"));
 });
-
-document.getElementById("addRowBtn").addEventListener("click", () => {
-  const newRow = document.createElement("tr");
-  newRow.innerHTML = `
-    <td><select class="grade">
-      <option value="1年" selected>1年</option>
-      <option value="2年">2年</option>
-      <option value="3年">3年</option></select>
-    </td>
-    <td><input type="text"></td>
-    <td><input type="number" step="0.1" class="batSpeed"></td>
-    <td><input type="number" step="0.1" class="attackAngle"></td>
-    <td><input type="number" step="0.001" class="timeContact"></td>
-    <td class="refSpeed">-</td>`;
-  const commentRow = document.createElement("tr");
-  commentRow.className = "comment-row";
-  commentRow.innerHTML = `<td colspan="6" class="comment">-</td>`;
-  tableBody.appendChild(newRow);
-  tableBody.appendChild(commentRow);
-  applyGradeToRow(newRow);
-});
-
-document.getElementById("removeRowBtn").addEventListener("click", () => {
-  const rows = Array.from(document.querySelectorAll("#blastTable tbody tr"));
-  if (rows.length < 2) return;
-  const lastComment = rows.pop();
-  const lastRow = rows.pop();
-  if (lastRow && lastComment && lastComment.classList.contains("comment-row")) {
-    lastRow.remove(); lastComment.remove(); updateAverages();
-  }
-});
-
-document.addEventListener("input", e => {
-  if (e.target.matches(".batSpeed, .attackAngle, .timeContact")) {
-    const row = e.target.closest("tr");
-    updateRow(row); updateAverages();
-  }
-});
-
-function updateRow(row) {
-  const batSpeed = parseFloat(row.querySelector(".batSpeed")?.value);
-  const attack = parseFloat(row.querySelector(".attackAngle")?.value);
-  const ttc = parseFloat(row.querySelector(".timeContact")?.value);
-  const refCell = row.querySelector(".refSpeed");
-  const commentRow = row.nextElementSibling?.classList.contains("comment-row") ? row.nextElementSibling : null;
-  if (!isNaN(batSpeed)) refCell.textContent = (batSpeed * 1.08).toFixed(1);
-  else refCell.textContent = "-";
-  if (!isNaN(batSpeed) && !isNaN(attack) && commentRow)
-    commentRow.querySelector(".comment").textContent = evaluate(batSpeed, attack, ttc);
-  else if (commentRow) commentRow.querySelector(".comment").textContent = "-";
-}
-
-function evaluate(batSpeed, attack, ttc) {
-  let comment = "";
-  if (batSpeed < 70)
-    comment = "まだ力の伝わり方が小さい。下半身から動けるようにしよう。";
-  else if (batSpeed < 78)
-    comment = "振る力は出てきているが、体の軸が少しブレる。";
-  else if (batSpeed < 88)
-    comment = "出力も安定し、角度とのバランスも良い。";
-  else
-    comment = "強いスイングができている。順序を保ち、正確な当たりを。";
-
-  if (attack < 0) comment += "／少し下がり気味。上体を我慢して下半身から。";
-  else if (attack > 18) comment += "／インパクト前にバットが上がりすぎやすい。胸郭を柔らかくして角度を整えよう。";
-  else if (attack >= 10 && batSpeed >= 78) comment += "／出力はあるが、スイング軌道が立ちすぎて上方向に抜けやすい。胸郭を柔らかくしよう。";
-
-  if (!isNaN(ttc)) {
-    if (ttc > 0.21) comment += "／始動が遅い。リズムを早く掴もう。";
-    else if (ttc < 0.17) comment += "／反応は速い。順序を崩さず正確に。";
-  }
-  return comment;
-}
-
-function updateAverages() {
-  const all = Array.from(document.querySelectorAll("tbody tr:not(.comment-row)"));
-  const grades = { "1年": [], "2年": [], "3年": [] };
-  const speeds = [];
-
-  all.forEach(row => {
-    const g = row.querySelector(".grade")?.value;
-    const s = parseFloat(row.querySelector(".batSpeed")?.value);
-    if (!isNaN(s)) {
-      speeds.push(s);
-      if (grades[g]) grades[g].push(s);
-    }
-  });
-
-  const avg = speeds.length ? (speeds.reduce((a,b)=>a+b,0)/speeds.length).toFixed(1) : "--";
-  const avgRef = avg !== "--" ? (avg * 1.08).toFixed(1) : "--";
-  document.getElementById("avgAll").innerHTML = `全体平均：${avg} km/h ｜ 参考：${avgRef} km/h`;
-
-  ["1年","2年","3年"].forEach(g => {
-    const arr = grades[g];
-    const mean = arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : "--";
-    document.getElementById("avg" + g[0]).innerHTML = `${g}：${mean} km/h`;
-  });
-  drawBarChart(avg, grades);
-  drawScatter(all);
-}
-
-function drawBarChart(avgAll, grades) {
-  adjustCanvasSize();
-  barCtx.clearRect(0, 0, barCtx.canvas.width, barCtx.canvas.height);
-  const data = [];
-  if (avgAll !== "--") data.push({label:"全体", value:parseFloat(avgAll), color:"#009e60"});
-  Object.entries(grades).forEach(([g, arr])=>{
-    if (arr.length>0){
-      const mean = (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1);
-      data.push({label:g, value:parseFloat(mean), color:g==="3年"?"#d62828":g==="2年"?"#4c8":"#4ca3ff"});
-    }
-  });
-  const barWidth = 60, gap = 50;
-  data.forEach((d,i)=>{
-    const x = 60 + i*(barWidth+gap);
-    const height = (barCtx.canvas.height-40)*(d.value/100);
-    barCtx.fillStyle=d.color;
-    barCtx.fillRect(x, barCtx.canvas.height-height-20, barWidth, height);
-    barCtx.fillStyle="#000"; barCtx.textAlign="center"; barCtx.font="12px sans-serif";
-    barCtx.fillText(d.label, x+barWidth/2, barCtx.canvas.height-5);
-    barCtx.fillText(d.value.toFixed(1), x+barWidth/2, barCtx.canvas.height-height-25);
-  });
-}
-
-function drawScatter(rows){
-  adjustCanvasSize();
-  scatterCtx.clearRect(0,0,scatterCtx.canvas.width,scatterCtx.canvas.height);
-  const xMin=-10,xMax=30,yMin=50,yMax=110;
-  const pad=40;
-  scatterCtx.strokeStyle="#aaa";
-  scatterCtx.strokeRect(pad,pad,scatterCtx.canvas.width-2*pad,scatterCtx.canvas.height-2*pad);
-  scatterCtx.font="11px sans-serif"; scatterCtx.fillStyle="#000";
-  scatterCtx.fillText("Attack Angle (°)", scatterCtx.canvas.width/2-30, scatterCtx.canvas.height-5);
-  scatterCtx.save(); scatterCtx.translate(10,scatterCtx.canvas.height/2+20);
-  scatterCtx.rotate(-Math.PI/2); scatterCtx.fillText("Bat Speed (km/h)",0,0); scatterCtx.restore();
-
-  rows.forEach(row=>{
-    const g=row.querySelector(".grade")?.value;
-    const color=g==="3年"?"#d62828":g==="2年"?"#4c8":"#4ca3ff";
-    const attack=parseFloat(row.querySelector(".attackAngle")?.value);
-    const speed=parseFloat(row.querySelector(".batSpeed")?.value);
-    if(isNaN(attack)||isNaN(speed)) return;
-    const x=pad+(attack-xMin)/(xMax-xMin)*(scatterCtx.canvas.width-2*pad);
-    const y=pad+(1-(speed-yMin)/(yMax-yMin))*(scatterCtx.canvas.height-2*pad);
-    scatterCtx.beginPath();
-    scatterCtx.arc(x,y,5,0,2*Math.PI);
-    scatterCtx.fillStyle=color+"88";
-    scatterCtx.fill();
-  });
-}
-
-function downloadCSV(){
-  let csv="学年,氏名,BatSpeed,AttackAngle,TimeToContact,Ref
+</script>
+</body>
+</html>

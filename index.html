@@ -348,59 +348,69 @@ function updateRow(row) {
 
 // === 評価ロジック ===
 function evaluate(batSpeed, attack, ttc) {
-  let comment = "";
+  let hit = "", move = "", body = "", risk = "";
 
-  // === Bat Speed × Attack Angle ===
-  if (batSpeed < 75 && attack < 6)
-    comment = "出力不足で軌道も低め。下半身の始動が遅れ、力がヘッドに伝わっていない。";
+  // --- 打球傾向 ---
+  if (attack < 0)
+    hit = "バットがボールの上から入りゴロ傾向。押し込み不足。";
+  else if (attack >= 0 && attack < 7)
+    hit = "低角度スイングでゴロが多くなりやすい。";
+  else if (attack >= 7 && attack <= 15)
+    hit = "理想的な打球角度（7〜15°）。強いライナーが出やすい。";
+  else if (attack > 15 && attack <= 22)
+    hit = "やや上方向のスイングで高めの打球傾向。";
+  else if (attack > 22)
+    hit = "強いアッパー軌道でフライ・空振りが増えやすい。";
+
+  // --- 動作傾向 ---
+  if (batSpeed < 75 && attack < 7)
+    move = "出力不足で下半身始動が遅れ、スイングが小さい。";
   else if (batSpeed < 75 && attack > 15)
-    comment = "出力が小さいまま上体で持ち上げている。胸郭の開きすぎに注意。";
-  else if (batSpeed >= 75 && batSpeed < 85 && attack >= 6 && attack <= 12)
-    comment = "出力と角度のバランスが良い。軸の安定と骨盤主導をキープしよう。";
-  else if (batSpeed >= 85 && attack >= 13 && attack <= 18)
-    comment = "強いスイングで飛距離が出るゾーン。胸郭の可動性とねじれの精度を磨きたい。";
-  else if (attack > 18)
-    comment = "軌道が立ちすぎてフライ傾向。胸郭の開きを遅らせ、骨盤の先行を意識。";
-  else if (attack < 0)
-    comment = "軌道が下がり気味でゴロ傾向。下半身からの押し込みを強化。";
-
-  // === Attack Angle × TTC ===
-  if (!isNaN(ttc)) {
-    if (attack >= 6 && attack <= 12 && ttc >= 0.17 && ttc <= 0.21)
-      comment += "／角度とタイミングの同期が良く、再現性の高いスイング。";
-    else if (attack >= 6 && attack <= 12 && ttc > 0.22)
-      comment += "／始動が遅く、リリースタイミングの把握に課題。骨盤リズムを早めよう。";
-    else if (attack >= 13 && attack <= 18 && ttc < 0.18)
-      comment += "／反応が速すぎて力みが出やすい。もう少し溜めを作りたい。";
-    else if (attack < 5 && ttc < 0.2)
-      comment += "／上半身主導の突っ込み傾向。下半身のリードを取り戻そう。";
-  }
-
-  // === Bat Speed × TTC ===
-  if (!isNaN(batSpeed) && !isNaN(ttc)) {
-    if (batSpeed < 75 && ttc > 0.22)
-      comment += "／出力も反応も遅いタイプ。基礎筋力と骨盤リズムの両立が必要。";
-    else if (batSpeed >= 75 && batSpeed < 85 && ttc > 0.22)
-      comment += "／出力は中程度だが始動が遅い。トップ形成と股関節リズムを改善。";
-    else if (batSpeed >= 85 && ttc > 0.22)
-      comment += "／出力は高いが反応が遅い。準備段階のリズム調整を優先。";
-    else if (batSpeed >= 85 && ttc < 0.18)
-      comment += "／強く速いスイング。再現性を高めるために脱力フェーズを意識。";
-    else if (batSpeed < 80 && ttc < 0.18)
-      comment += "／反応は速いが出力不足。下半身主導で力の通り道を作ろう。";
-  }
-
-  // === フィジカル課題マッピング ===
-  if (batSpeed < 75 && attack < 5)
-    comment += "／課題：股関節主導・地面反力の活用不足。ヒップイン系ドリル推奨。";
-  else if (batSpeed >= 75 && batSpeed < 85 && ttc > 0.22)
-    comment += "／課題：軸安定と腹斜筋リズム。骨盤先行と胸郭遅延を強化。";
+    move = "上体主導で持ち上げる動き。胸郭の早開き傾向。";
+  else if (batSpeed >= 75 && batSpeed < 85 && attack >= 7 && attack <= 15)
+    move = "出力と角度の整合性が良い。安定したスイング。";
   else if (batSpeed >= 85 && attack > 15)
-    comment += "／課題：胸郭制御と肩甲骨締め。ねじれ制動ドリル推奨。";
-  else if (batSpeed >= 80 && attack >= 6 && attack <= 12 && ttc < 0.21)
-    comment += "／現状：出力・角度・反応が揃った理想的連動。再現性向上フェーズ。";
+    move = "高出力だがアッパー傾向。胸郭が先行している。";
+  else if (batSpeed >= 85 && attack >= 7 && attack <= 15)
+    move = "強く、再現性の高いスイングゾーン。";
 
-  return comment;
+  // --- 反応 × タイミング ---
+  if (!isNaN(ttc)) {
+    if (attack >= 7 && attack <= 15 && ttc >= 0.17 && ttc <= 0.21)
+      move += "タイミングも安定している。";
+    else if (attack >= 7 && attack <= 15 && ttc > 0.22)
+      move += "始動が遅れがち。差し込まれやすい。";
+    else if (attack > 15 && ttc < 0.18)
+      move += "始動が早すぎて溜め不足。前のめり気味。";
+    else if (attack < 5 && ttc < 0.18)
+      move += "突っ込み気味の下方向スイング。";
+  }
+
+  // --- フィジカル課題 ---
+ // === フィジカル課題マッピング（修正版） ===
+if (batSpeed < 75 && attack < 5)
+  body = "股関節と下半身強化。股関節の受け止め方・地面反力系の取り組み推奨。";
+else if (batSpeed >= 75 && batSpeed < 85 && ttc > 0.22)
+  body = "軸安定と腹斜筋の動きを改善。骨盤先行と胸郭遅延の強化。";
+else if (batSpeed >= 85 && attack > 15)
+  body = "胸郭と肩甲骨の制御。捻転コントロール・胸郭連動系トレーニング。";
+else if (batSpeed >= 80 && attack >= 7 && attack <= 15 && ttc < 0.21)
+  body = "出力・角度・反応が整っており、全てのトレーニングで動きの再現性向上フェーズ。";
+
+  // --- 意図的修正リスク ---
+  if (attack < 7)
+    risk = "ゴロ修正で角度を上げようとすると、上体が早く起きてフライが増える。押し出しを意識。";
+  else if (attack > 15)
+    risk = "フライ修正でスイングを浅くすると、力が前で切れる。押し込み位置を意識。";
+  else
+    risk = "好調時のスイングを変えると崩れる。リズム再現を優先。";
+
+  return `
+    <span class="type comment-type-hit">［打球傾向］${hit}</span>
+    <span class="type comment-type-move">［動作傾向］${move}</span>
+    <span class="type comment-type-body">［フィジカル課題］${body}</span>
+    <span class="type comment-type-risk">［注意点］${risk}</span>
+  `;
 }
 
 // === 平均計算 + グラフ描画 ===

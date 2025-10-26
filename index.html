@@ -1,4 +1,4 @@
-# blast-record-jhs<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -29,19 +29,16 @@ body {
   margin: 0;
   padding: 10px;
 }
-
 h1 {
   text-align: center;
   color: #009e60;
   margin: 10px 0;
   font-size: 1.4rem;
 }
-
 #metaBox {
   text-align: center;
   margin-bottom: 15px;
 }
-
 #metaBox input {
   padding: 6px 10px;
   margin: 4px;
@@ -49,21 +46,18 @@ h1 {
   border: 1px solid #ccc;
   border-radius: 4px;
 }
-
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
   margin-bottom: 20px;
 }
-
 th, td {
   border: 1px solid #ccc;
   padding: 6px;
   text-align: center;
   vertical-align: middle;
 }
-
 th {
   background: #e8f5e9;
   color: #006b4b;
@@ -71,7 +65,6 @@ th {
   top: 0;
   z-index: 2;
 }
-
 input[type="number"], input[type="text"] {
   width: 90%;
   padding: 4px;
@@ -80,7 +73,6 @@ input[type="number"], input[type="text"] {
   border-radius: 4px;
   font-size: 0.9rem;
 }
-
 .comment-row td {
   background: #fafafa;
   font-size: 0.8rem;
@@ -90,7 +82,6 @@ input[type="number"], input[type="text"] {
   border-top: none;
   color: #333;
 }
-
 button {
   background: #009e60;
   color: #fff;
@@ -101,22 +92,17 @@ button {
   font-weight: bold;
   margin: 8px;
 }
-
 button:hover { background: #00784a; }
-
 #averageBox {
   text-align: center;
   margin-top: 15px;
   font-weight: bold;
   color: #006b4b;
   line-height: 1.8;
-  transition: color 0.3s;
 }
-
 .high { color: #009e60; }
 .mid { color: #333; }
 .low { color: #d62828; }
-
 #chart {
   margin: 20px auto;
   display: block;
@@ -139,7 +125,7 @@ button:hover { background: #00784a; }
   <table id="blastTable">
     <thead>
       <tr>
-        <th>学年・氏名</th>
+        <th>氏名</th>
         <th>Bat Speed<br>(km/h)</th>
         <th>Attack Angle<br>(°)</th>
         <th>Time to Contact<br>(s)</th>
@@ -154,9 +140,7 @@ button:hover { background: #00784a; }
         <td><input type="number" step="0.001" class="timeContact"></td>
         <td class="refSpeed">-</td>
       </tr>
-      <tr class="comment-row">
-        <td colspan="5" class="comment">-</td>
-      </tr>
+      <tr class="comment-row"><td colspan="5" class="comment">-</td></tr>
     </tbody>
   </table>
 
@@ -165,7 +149,7 @@ button:hover { background: #00784a; }
   </div>
 
   <div id="averageBox">
-    <span id="avgAll" class="mid">全体平均：-- km/h　｜　参考：-- km/h</span><br>
+    <span id="avgAll" class="mid">全体平均：-- km/h　｜　参考：-- km/h</span>
   </div>
 
   <canvas id="chart"></canvas>
@@ -176,13 +160,10 @@ button:hover { background: #00784a; }
 </div>
 
 <script>
-// === 初期日付設定 ===
 document.getElementById("recordDate").valueAsDate = new Date();
-
 const ctx = document.getElementById("chart").getContext("2d");
 const tableBody = document.getElementById("tableBody");
 
-// === 入力イベント ===
 document.addEventListener("input", e => {
   if (e.target.matches(".batSpeed, .attackAngle, .timeContact")) {
     const row = e.target.closest("tr");
@@ -191,7 +172,6 @@ document.addEventListener("input", e => {
   }
 });
 
-// === 行追加 ===
 document.getElementById("addRowBtn").addEventListener("click", () => {
   const newRow = document.createElement("tr");
   newRow.innerHTML = `
@@ -207,23 +187,22 @@ document.getElementById("addRowBtn").addEventListener("click", () => {
   tableBody.appendChild(commentRow);
 });
 
-// === 行更新 ===
 function updateRow(row) {
   const batSpeed = parseFloat(row.querySelector(".batSpeed")?.value);
   const attack = parseFloat(row.querySelector(".attackAngle")?.value);
   const ttc = parseFloat(row.querySelector(".timeContact")?.value);
   const refCell = row.querySelector(".refSpeed");
-  const commentRow = row.nextElementSibling;
+  const commentRow = row.nextElementSibling?.classList.contains("comment-row") ? row.nextElementSibling : null;
 
   if (!isNaN(batSpeed)) refCell.textContent = (batSpeed * 1.08).toFixed(1);
   else refCell.textContent = "-";
 
-  if (!isNaN(batSpeed) && !isNaN(attack))
+  if (!isNaN(batSpeed) && !isNaN(attack) && commentRow)
     commentRow.querySelector(".comment").textContent = evaluate(batSpeed, attack, ttc);
-  else commentRow.querySelector(".comment").textContent = "-";
+  else if (commentRow)
+    commentRow.querySelector(".comment").textContent = "-";
 }
 
-// === コメント生成 ===
 function evaluate(batSpeed, attack, ttc) {
   let comment = "";
 
@@ -256,7 +235,6 @@ function evaluate(batSpeed, attack, ttc) {
   return comment;
 }
 
-// === 平均更新 ===
 function updateAverages() {
   const speeds = Array.from(document.querySelectorAll(".batSpeed"))
     .map(i => parseFloat(i.value))
@@ -269,8 +247,7 @@ function updateAverages() {
   drawChart(avg);
 }
 
-// === 棒グラフ ===
-function drawChart((avgAll, avg2, avg1) {
+function drawChart(avgAll) {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   const value = parseFloat(avgAll) || 0;
   const maxVal = 100;
@@ -284,11 +261,9 @@ function drawChart((avgAll, avg2, avg1) {
   ctx.fillText(value.toFixed(1), 140, ctx.canvas.height - height - 15);
 }
 
-// === CSV出力 ===
 function downloadCSV() {
   const team = document.getElementById("teamName").value || "未設定";
   const date = document.getElementById("recordDate").value || "未設定";
-
   let csv = `チーム名：${team},日付：${date}\n`;
   csv += "氏名,BatSpeed(km/h),AttackAngle(°),TimeToContact(s),参考ヘッドスピード(km/h),コメント\n";
 
@@ -311,4 +286,3 @@ function downloadCSV() {
 </script>
 </body>
 </html>
-

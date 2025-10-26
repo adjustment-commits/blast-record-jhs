@@ -188,11 +188,11 @@ document.addEventListener("input", e => {
   }
 });
 
-// === 学年選択時の反映（同じ学年でも反応） ===
-document.addEventListener("change", handleGradeChange);
-document.addEventListener("input", handleGradeChange);
+// === 学年選択時の反映（同じ学年再選択もOK） ===
+document.addEventListener("change", handleGradeUpdate);
+document.addEventListener("click", handleGradeUpdate);
 
-function handleGradeChange(e) {
+function handleGradeUpdate(e) {
   if (e.target.classList.contains("grade")) {
     const row = e.target.closest("tr");
     const selected = e.target.value;

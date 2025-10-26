@@ -207,6 +207,12 @@ canvas {
   <button id="removeRowBtn" style="background:#d62828;">− 選手を削除</button>
 </div>
 
+<div style="text-align:center; margin-top:10px;">
+  <button onclick="saveData()" style="background:#006b4b;">💾 データ保存</button>
+  <button onclick="loadData()" style="background:#4c8;">📂 データ復元</button>
+  <button onclick="resetData()" style="background:#d62828;">🗑️ 全削除</button>
+</div>
+
 <div id="averageBox">
   <span id="avgAll">全体平均：-- km/h ｜ 参考：-- km/h</span><br>
   <span id="avg3">3年：-- km/h</span>　
@@ -483,7 +489,30 @@ function downloadCSV(){
   link.download="blast_record.csv";
   link.click();
 }
+  
+// === 手動保存・復元・リセット ===
+function saveData() {
+  localStorage.setItem("blastTableData", tableBody.innerHTML);
+  alert("データを保存しました。");
+}
 
+function loadData() {
+  const saved = localStorage.getItem("blastTableData");
+if (saved) {
+  tableBody.innerHTML = saved;
+  alert("保存データを復元しました。");
+  document.querySelectorAll("#tableBody tr:not(.comment-row)").forEach(applyGradeToRow);
+  updateAverages();
+}
+}
+
+function resetData() {
+  if (confirm("すべてのデータを削除します。よろしいですか？")) {
+    localStorage.removeItem("blastTableData");
+    location.reload();
+  }
+}
+  
 // === サイズ調整 ===
 function adjustCanvasSize() {
   const charts = document.querySelectorAll("canvas");

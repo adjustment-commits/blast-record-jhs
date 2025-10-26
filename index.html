@@ -258,12 +258,13 @@ canvas {
 </div>
 
 <script>
-// === JS部分（変わらず安定動作） ===
+// === 初期設定 ===
 document.getElementById("recordDate").valueAsDate = new Date();
 const barCtx = document.getElementById("barChart").getContext("2d");
 const scatterCtx = document.getElementById("scatterChart").getContext("2d");
 const tableBody = document.getElementById("tableBody");
 
+// === 学年反映 ===
 function applyGradeToRow(row) {
   const select = row.querySelector(".grade");
   const commentRow = row.nextElementSibling;
@@ -272,12 +273,245 @@ function applyGradeToRow(row) {
   const currentText = (commentCell.textContent || "").replace(/^【.*?】\s*/,"").trim() || "-";
   commentCell.textContent = `【${select.value}】 ${currentText}`;
 }
+
 window.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("#tableBody tr:not(.comment-row)").forEach(applyGradeToRow);
 });
+
 document.addEventListener("change", e => {
   if (e.target.classList.contains("grade")) applyGradeToRow(e.target.closest("tr"));
 });
+
+// === PWA対応：選手追加・削除 ===
+const addBtn = document.getElementById("addRowBtn");
+const removeBtn = document.getElementById("removeRowBtn");
+
+// iPad / PWA対応：クリック・タップ両対応イベント
+["click", "pointerup", "touchend"].forEach(ev => {
+  addBtn.addEventListener(ev, () => {
+    const newRow = document.createElement("tr");
+    newRow.innerHTML = `
+      <td><select class="grade">
+        <option value="1年" selected>1年</option>
+        <option value="2年">2年</option>
+        <option value="3年">3年</option></select>
+      </td>
+      <td><input type="text"></td>
+      <td><input type="number" step="0.1" class="batSpeed"></td>
+      <td><input type="number" step="0.1" class="attackAngle"></td>
+      <td><input type="number" step="0.001" class="timeContact"></td>
+      <td class="refSpeed">-</td>`;
+    const commentRow = document.createElement("tr");
+    commentRow.className = "comment-row";
+    commentRow.innerHTML = `<td colspan="6" class="comment">-</td>`;
+    tableBody.appendChild(newRow);
+    tableBody.appendChild(commentRow);
+    applyGradeToRow(newRow);
+  });
+
+  removeBtn.addEventListener(ev, () => {
+    const rows = Array.from(document.querySelectorAll("#blastTable tbody tr"));
+    if (rows.length < 2) return;
+    const lastComment = rows.pop();
+    const lastRow = rows.pop();
+    if (lastRow && lastComment && lastComment.classList.contains("comment-row")) {
+      lastRow.remove();
+      lastComment.remove();
+      updateAverages();
+    }
+  });
+});
+
+// === 入力イベント ===
+document.addEventListener("input", e => {
+  if (e.target.matches(".batSpeed, .attackAngle, .timeContact")) {
+    const row = e.target.closest("tr");
+    updateRow(row);
+    updateAverages();
+  }
+});
+
+// === コメント評価 ===
+function updateRow(row) {
+  const batSpeed = parseFloat(row.querySelector(".batSpeed")?.value);
+  const attack = parseFloat(row.querySelector(".attackAngle")?.value);
+  const ttc = parseFloat(row.querySelector(".timeContact")?.value);
+  const refCell = row.querySelector(".refSpeed");
+  const commentRow = row.nextElementSibling?.classList.contains("comment-row") ? row.nextElementSibling : null;
+
+  if (!isNaN(batSpeed)) refCell.textContent = (batSpeed * 1.08).toFixed(1);
+  else refCell.textContent = "-";
+
+  if (!isNaN(batSpeed) && !isNaN(attack) && commentRow)
+    commentRow.querySelector(".comment").textContent = evaluate(batSpeed, attack, ttc);
+  else if (commentRow) commentRow.querySelector(".comment").textContent = "-";
+}
+
+// === 評価ロジック ===
+function evaluate(batSpeed, attack, ttc) {
+  let comment = "";
+
+  // 出力レベル
+  if (batSpeed < 70)
+    comment = "まだ力の伝わり方が小さい。下半身から順に動かせるように意識しよう。";
+  else if (batSpeed < 75)
+    comment = "出力は出てきているが、力みが残っている。下半身主導を保ちたい。";
+  else if (batSpeed < 82)
+    comment = "出力が安定し始めている。軸のブレを抑えて角度との整合を意識。";
+  else if (batSpeed < 88)
+    comment = "出力も安定し、スイングの再現性が上がっている。体幹の連動をキープ。";
+  else
+    comment = "非常に強いスイングができている。順序を保ち、再現性を磨こう。";
+
+  // アタックアングル
+  if (!isNaN(attack)) {
+    if (attack < -2)
+      comment += "／軌道が下がり気味。上体を早く倒さず、股関節の入りで下から順に動こう。";
+    else if (attack < 5)
+      comment += "／角度がやや低い。骨盤の先行を意識して押し出す形を作りたい。";
+    else if (attack <= 15)
+      comment += "／角度バランスは良好。下半身と上半身の切り返しタイミングを維持。";
+    else if (attack <= 20)
+      comment += "／角度がやや立ちすぎ。上体の起こしを遅らせる意識を持とう。";
+    else
+      comment += "／軌道が立ちすぎて上方向に抜けやすい。胸郭の柔軟性を取り戻そう。";
+  }
+
+  // タイム・トゥ・コンタクト
+  if (!isNaN(ttc)) {
+    if (ttc > 0.23)
+      comment += "／始動が遅い。リズムを早く掴み、トップを早めにセット。";
+    else if (ttc > 0.21)
+      comment += "／始動がやや遅め。下半身のリズムを優先しよう。";
+    else if (ttc < 0.17)
+      comment += "／反応が速い。順序を崩さず正確にボールを捉えたい。";
+    else
+      comment += "／反応リズムは良好。タイミングが安定している。";
+  }
+
+  // 総評（理想とは言わない）
+  if (batSpeed >= 85 && attack >= 5 && attack <= 15 && ttc <= 0.21 && ttc >= 0.17)
+    comment += "／動作の順序・角度・タイミングが整い、力の伝達がスムーズ。再現性が高いスイング。";
+  else if (batSpeed >= 80 && attack >= 0 && attack <= 18 && ttc <= 0.22 && ttc >= 0.16)
+    comment += "／動作の秩序が見え始めている。下半身と胸郭の連動をさらに磨こう。";
+  else if (batSpeed >= 75 && attack > 10)
+    comment += "／出力はあるが順序が追いついていない。骨盤から胸郭への伝達を見直したい。";
+
+  return comment;
+}
+
+// === 平均計算 + グラフ描画 ===
+function updateAverages() {
+  const all = Array.from(document.querySelectorAll("tbody tr:not(.comment-row)"));
+  const grades = { "1年": [], "2年": [], "3年": [] };
+  const speeds = [];
+
+  all.forEach(row => {
+    const g = row.querySelector(".grade")?.value;
+    const s = parseFloat(row.querySelector(".batSpeed")?.value);
+    if (!isNaN(s)) {
+      speeds.push(s);
+      if (grades[g]) grades[g].push(s);
+    }
+  });
+
+  const avg = speeds.length ? (speeds.reduce((a,b)=>a+b,0)/speeds.length).toFixed(1) : "--";
+  const avgRef = avg !== "--" ? (avg * 1.08).toFixed(1) : "--";
+  document.getElementById("avgAll").innerHTML = `全体平均：${avg} km/h ｜ 参考：${avgRef} km/h`;
+
+  ["1年","2年","3年"].forEach(g => {
+    const arr = grades[g];
+    const mean = arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : "--";
+    document.getElementById("avg" + g[0]).innerHTML = `${g}：${mean} km/h`;
+  });
+
+  drawBarChart(avg, grades);
+  drawScatter(all);
+}
+
+// === 上段：棒グラフ ===
+function drawBarChart(avgAll, grades) {
+  adjustCanvasSize();
+  barCtx.clearRect(0, 0, barCtx.canvas.width, barCtx.canvas.height);
+  const data = [];
+  if (avgAll !== "--") data.push({label:"全体", value:parseFloat(avgAll), color:"#009e60"});
+  Object.entries(grades).forEach(([g, arr])=>{
+    if (arr.length>0){
+      const mean = (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1);
+      data.push({label:g, value:parseFloat(mean), color:g==="3年"?"#d62828":g==="2年"?"#4c8":"#4ca3ff"});
+    }
+  });
+  const barWidth = 60, gap = 50;
+  data.forEach((d,i)=>{
+    const x = 60 + i*(barWidth+gap);
+    const height = (barCtx.canvas.height-40)*(d.value/100);
+    barCtx.fillStyle=d.color;
+    barCtx.fillRect(x, barCtx.canvas.height-height-20, barWidth, height);
+    barCtx.fillStyle="#000"; barCtx.textAlign="center"; barCtx.font="12px sans-serif";
+    barCtx.fillText(d.label, x+barWidth/2, barCtx.canvas.height-5);
+    barCtx.fillText(d.value.toFixed(1), x+barWidth/2, barCtx.canvas.height-height-25);
+  });
+}
+
+// === 下段：散布図 ===
+function drawScatter(rows){
+  adjustCanvasSize();
+  scatterCtx.clearRect(0,0,scatterCtx.canvas.width,scatterCtx.canvas.height);
+  const xMin=-10,xMax=30,yMin=50,yMax=110;
+  const pad=40;
+  scatterCtx.strokeStyle="#aaa";
+  scatterCtx.strokeRect(pad,pad,scatterCtx.canvas.width-2*pad,scatterCtx.canvas.height-2*pad);
+  scatterCtx.font="11px sans-serif"; scatterCtx.fillStyle="#000";
+  scatterCtx.fillText("Attack Angle (°)", scatterCtx.canvas.width/2-30, scatterCtx.canvas.height-5);
+  scatterCtx.save(); scatterCtx.translate(10,scatterCtx.canvas.height/2+20);
+  scatterCtx.rotate(-Math.PI/2); scatterCtx.fillText("Bat Speed (km/h)",0,0); scatterCtx.restore();
+
+  rows.forEach(row=>{
+    const g=row.querySelector(".grade")?.value;
+    const color=g==="3年"?"#d62828":g==="2年"?"#4c8":"#4ca3ff";
+    const attack=parseFloat(row.querySelector(".attackAngle")?.value);
+    const speed=parseFloat(row.querySelector(".batSpeed")?.value);
+    if(isNaN(attack)||isNaN(speed)) return;
+    const x=pad+(attack-xMin)/(xMax-xMin)*(scatterCtx.canvas.width-2*pad);
+    const y=pad+(1-(speed-yMin)/(yMax-yMin))*(scatterCtx.canvas.height-2*pad);
+    scatterCtx.beginPath();
+    scatterCtx.arc(x,y,5,0,2*Math.PI);
+    scatterCtx.fillStyle=color+"88";
+    scatterCtx.fill();
+  });
+}
+
+// === CSV出力 ===
+function downloadCSV(){
+  let csv="学年,氏名,BatSpeed,AttackAngle,TimeToContact,RefSpeed,コメント\n";
+  document.querySelectorAll("#tableBody tr:not(.comment-row)").forEach(row=>{
+    const grade=row.querySelector(".grade")?.value||"";
+    const name=row.querySelector("input[type=text]")?.value||"";
+    const s1=row.querySelector(".batSpeed")?.value||"";
+    const s2=row.querySelector(".attackAngle")?.value||"";
+    const s3=row.querySelector(".timeContact")?.value||"";
+    const s4=row.querySelector(".refSpeed")?.textContent||"";
+    const comment=row.nextElementSibling?.querySelector(".comment")?.textContent||"";
+    csv+=`${grade},${name},${s1},${s2},${s3},${s4},"${comment}"\n`;
+  });
+  const blob=new Blob([csv],{type:"text/csv"});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.download="blast_record.csv";
+  link.click();
+}
+
+// === サイズ調整 ===
+function adjustCanvasSize() {
+  const charts = document.querySelectorAll("canvas");
+  charts.forEach(c => {
+    const parentWidth = c.parentElement.offsetWidth;
+    c.width = parentWidth;
+    c.height = parentWidth * 0.6;
+  });
+}
+window.addEventListener('load', adjustCanvasSize);
+window.addEventListener('resize', adjustCanvasSize);
 </script>
 </body>
 </html>

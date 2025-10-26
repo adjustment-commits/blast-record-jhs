@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BLAST記録">
+
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -100,15 +101,12 @@ button:hover { background: #00784a; }
   color: #006b4b;
   line-height: 1.8;
 }
-.high { color: #009e60; }
-.mid { color: #333; }
-.low { color: #d62828; }
 #chart {
   margin: 20px auto;
   display: block;
-  width: 90%;
-  max-width: 420px;
-  height: 200px;
+  width: 95%;
+  max-width: 600px;
+  height: 240px;
 }
 select.grade {
   width: 95%;
@@ -131,41 +129,44 @@ select.grade {
 
   <table id="blastTable">
     <thead>
-  <tr>
-    <th>学年</th>
-    <th>氏名</th>
-    <th>Bat Speed<br>(km/h)</th>
-    <th>Attack Angle<br>(°)</th>
-    <th>Time to Contact<br>(s)</th>
-    <th>参考ヘッドスピード<br>(km/h)</th>
-  </tr>
-</thead>
+      <tr>
+        <th>学年</th>
+        <th>氏名</th>
+        <th>Bat Speed<br>(km/h)</th>
+        <th>Attack Angle<br>(°)</th>
+        <th>Time to Contact<br>(s)</th>
+        <th>参考ヘッドスピード<br>(km/h)</th>
+      </tr>
+    </thead>
     <tbody id="tableBody">
-  <tr>
-    <td>
-      <select class="grade">
-        <option value="1年">1年</option>
-        <option value="2年" selected>2年</option>
-        <option value="3年">3年</option>
-      </select>
-    </td>
-    <td><input type="text" value="石井"></td>
-    <td><input type="number" step="0.1" class="batSpeed"></td>
-    <td><input type="number" step="0.1" class="attackAngle"></td>
-    <td><input type="number" step="0.001" class="timeContact"></td>
-    <td class="refSpeed">-</td>
-  </tr>
-  <tr class="comment-row"><td colspan="6" class="comment">-</td></tr>
-</tbody>
-</table>
+      <tr>
+        <td>
+          <select class="grade">
+            <option value="1年">1年</option>
+            <option value="2年" selected>2年</option>
+            <option value="3年">3年</option>
+          </select>
+        </td>
+        <td><input type="text" value="石井"></td>
+        <td><input type="number" step="0.1" class="batSpeed"></td>
+        <td><input type="number" step="0.1" class="attackAngle"></td>
+        <td><input type="number" step="0.001" class="timeContact"></td>
+        <td class="refSpeed">-</td>
+      </tr>
+      <tr class="comment-row"><td colspan="6" class="comment">-</td></tr>
+    </tbody>
+  </table>
 
   <div style="text-align:center;">
-  <button id="addRowBtn">＋ 選手を追加</button>
-  <button id="removeRowBtn" style="background:#d62828;">− 選手を削除</button>
-　</div>
+    <button id="addRowBtn">＋ 選手を追加</button>
+    <button id="removeRowBtn" style="background:#d62828;">− 選手を削除</button>
+  </div>
 
   <div id="averageBox">
-    <span id="avgAll" class="mid">全体平均：-- km/h　｜　参考：-- km/h</span>
+    <span id="avgAll">全体平均：-- km/h ｜ 参考：-- km/h</span><br>
+    <span id="avg3">3年：-- km/h</span>　
+    <span id="avg2">2年：-- km/h</span>　
+    <span id="avg1">1年：-- km/h</span>
   </div>
 
   <canvas id="chart"></canvas>
@@ -180,89 +181,79 @@ document.getElementById("recordDate").valueAsDate = new Date();
 const ctx = document.getElementById("chart").getContext("2d");
 const tableBody = document.getElementById("tableBody");
 
-// === 入力イベント ===
-document.addEventListener("input", e => {
-  if (e.target.matches(".batSpeed, .attackAngle, .timeContact")) {
-    const row = e.target.closest("tr");
-    updateRow(row);
-    updateAverages();
-  }
-});
-
-// === 学年を反映する関数 ===
+// === 学年反映 ===
 function applyGradeToRow(row) {
   const select = row.querySelector(".grade");
   const commentRow = row.nextElementSibling;
   if (!select || !commentRow || !commentRow.classList.contains("comment-row")) return;
-
   const commentCell = commentRow.querySelector(".comment");
-  const currentText = (commentCell.textContent || "")
-    .replace(/^【.*?】\s*/,"")
-    .trim() || "-";
-
+  const currentText = (commentCell.textContent || "").replace(/^【.*?】\s*/,"").trim() || "-";
   commentCell.textContent = `【${select.value}】 ${currentText}`;
 }
-
-// === 初期反映 ===
 window.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("#tableBody tr:not(.comment-row)").forEach(applyGradeToRow);
 });
-
-// === 学年変更時にも反映 ===
 document.addEventListener("change", e => {
-  if (e.target.classList.contains("grade")) {
-    applyGradeToRow(e.target.closest("tr"));
-  }
+  if (e.target.classList.contains("grade")) applyGradeToRow(e.target.closest("tr"));
 });
 
-// === 選手追加ボタン ===
+// === 選手追加 ===
 document.getElementById("addRowBtn").addEventListener("click", () => {
   const newRow = document.createElement("tr");
   newRow.innerHTML = `
-    <td>
-      <select class="grade">
-        <option value="1年">1年</option>
-        <option value="2年" selected>2年</option>
-        <option value="3年">3年</option>
-      </select>
+    <td><select class="grade">
+      <option value="1年">1年</option>
+      <option value="2年">2年</option>
+      <option value="3年">3年</option></select>
     </td>
-    <td><input type="text" value=""></td>
+    <td><input type="text"></td>
     <td><input type="number" step="0.1" class="batSpeed"></td>
     <td><input type="number" step="0.1" class="attackAngle"></td>
     <td><input type="number" step="0.001" class="timeContact"></td>
     <td class="refSpeed">-</td>`;
-
   const commentRow = document.createElement("tr");
   commentRow.className = "comment-row";
   commentRow.innerHTML = `<td colspan="6" class="comment">-</td>`;
-
   tableBody.appendChild(newRow);
   tableBody.appendChild(commentRow);
-
-  // 追加した行にも反映
   applyGradeToRow(newRow);
 });
 
-// === 評価・換算ロジック ===
+// === 削除 ===
+document.getElementById("removeRowBtn").addEventListener("click", () => {
+  const rows = Array.from(document.querySelectorAll("#blastTable tbody tr"));
+  if (rows.length < 2) return;
+  const lastComment = rows.pop();
+  const lastRow = rows.pop();
+  if (lastRow && lastComment && lastComment.classList.contains("comment-row")) {
+    lastRow.remove(); lastComment.remove(); updateAverages();
+  }
+});
+
+// === 入力イベント ===
+document.addEventListener("input", e => {
+  if (e.target.matches(".batSpeed, .attackAngle, .timeContact")) {
+    const row = e.target.closest("tr");
+    updateRow(row); updateAverages();
+  }
+});
+
 function updateRow(row) {
   const batSpeed = parseFloat(row.querySelector(".batSpeed")?.value);
   const attack = parseFloat(row.querySelector(".attackAngle")?.value);
   const ttc = parseFloat(row.querySelector(".timeContact")?.value);
   const refCell = row.querySelector(".refSpeed");
   const commentRow = row.nextElementSibling?.classList.contains("comment-row") ? row.nextElementSibling : null;
-
   if (!isNaN(batSpeed)) refCell.textContent = (batSpeed * 1.08).toFixed(1);
   else refCell.textContent = "-";
-
   if (!isNaN(batSpeed) && !isNaN(attack) && commentRow)
     commentRow.querySelector(".comment").textContent = evaluate(batSpeed, attack, ttc);
-  else if (commentRow)
-    commentRow.querySelector(".comment").textContent = "-";
+  else if (commentRow) commentRow.querySelector(".comment").textContent = "-";
 }
 
+// === 評価ロジック ===
 function evaluate(batSpeed, attack, ttc) {
   let comment = "";
-
   if (batSpeed < 70)
     comment = "まだ力の伝わり方が小さいけど、しっかり振ろうとする意識は良い。下半身から動けるようにしよう。";
   else if (batSpeed < 78)
@@ -274,6 +265,7 @@ function evaluate(batSpeed, attack, ttc) {
 
   if (attack < 0) comment += "／少し下がり気味。上体を我慢して下半身から。";
   else if (attack > 18) comment += "／上に抜けやすい。胸郭を柔らかくして角度を整えよう。";
+  else if (attack >= 10 && batSpeed >= 78) comment += "／出力はあるが、胸郭の硬さで軌道が縦に偏りやすい。胸郭を柔らかくしよう。";
   else if (attack > 12) comment += "／強打志向。脚の安定を保とう。";
 
   if (!isNaN(ttc)) {
@@ -288,54 +280,78 @@ function evaluate(batSpeed, attack, ttc) {
 
   if (batSpeed < 75 && isNaN(ttc))
     comment += " 初めての計測としては良い。数字よりも動きの感覚を大事に。";
-
   return comment;
 }
 
-// === 平均計算 ===
+// === 平均計算 + 学年別 ===
 function updateAverages() {
-  const speeds = Array.from(document.querySelectorAll(".batSpeed"))
-    .map(i => parseFloat(i.value))
-    .filter(v => !isNaN(v));
-  if (!speeds.length) {
-    document.getElementById("avgAll").innerHTML = "全体平均：-- km/h　｜　参考：-- km/h";
-    drawChart(0);
-    return;
-  }
+  const all = Array.from(document.querySelectorAll("tbody tr:not(.comment-row)"));
+  const grades = { "1年": [], "2年": [], "3年": [] };
+  const speeds = [];
 
-  const avg = (speeds.reduce((a,b)=>a+b,0)/speeds.length).toFixed(1);
-  const avgRef = (avg * 1.08).toFixed(1);
-  document.getElementById("avgAll").innerHTML = `全体平均：${avg} km/h　｜　参考：${avgRef} km/h`;
-  drawChart(avg);
+  all.forEach(row => {
+    const g = row.querySelector(".grade")?.value;
+    const s = parseFloat(row.querySelector(".batSpeed")?.value);
+    if (!isNaN(s)) {
+      speeds.push(s);
+      if (grades[g]) grades[g].push(s);
+    }
+  });
+
+  const avg = speeds.length ? (speeds.reduce((a,b)=>a+b,0)/speeds.length).toFixed(1) : "--";
+  const avgRef = avg !== "--" ? (avg * 1.08).toFixed(1) : "--";
+  document.getElementById("avgAll").innerHTML = `全体平均：${avg} km/h ｜ 参考：${avgRef} km/h`;
+
+  ["1年","2年","3年"].forEach(g => {
+    const arr = grades[g];
+    const mean = arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : "--";
+    document.getElementById("avg" + g[0]).innerHTML = `${g}：${mean} km/h`;
+  });
+  drawChart(avg, grades);
 }
 
-// === グラフ描画 ===
-function drawChart(avgAll) {
+// === グラフ ===
+function drawChart(avgAll, grades) {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  const value = parseFloat(avgAll) || 0;
-  const maxVal = 100;
-  const height = (ctx.canvas.height - 30) * (value / maxVal);
-  ctx.fillStyle = value >= 80 ? "#009e60" : value >= 70 ? "#555" : "#d62828";
-  ctx.fillRect(100, ctx.canvas.height - height - 10, 80, height);
-  ctx.fillStyle = "#000";
-  ctx.textAlign = "center";
-  ctx.font = "14px sans-serif";
-  ctx.fillText("全体平均", 140, ctx.canvas.height - 2);
-  ctx.fillText(value.toFixed(1), 140, ctx.canvas.height - height - 15);
+  const data = [
+    {label:"全体", value: parseFloat(avgAll)||0, color:"#009e60"},
+    {label:"3年", value:(grades["3年"].reduce((a,b)=>a+b,0)/(grades["3年"].length||1))||0, color:"#555"},
+    {label:"2年", value:(grades["2年"].reduce((a,b)=>a+b,0)/(grades["2年"].length||1))||0, color:"#888"},
+    {label:"1年", value:(grades["1年"].reduce((a,b)=>a+b,0)/(grades["1年"].length||1))||0, color:"#bbb"}
+  ];
+  const barWidth = 60, gap = 50;
+  data.forEach((d,i)=>{
+    const x = 60 + i*(barWidth+gap);
+    const height = (ctx.canvas.height-40)*(d.value/100);
+    ctx.fillStyle=d.color;
+    ctx.fillRect(x, ctx.canvas.height-height-20, barWidth, height);
+    ctx.fillStyle="#000";
+    ctx.textAlign="center";
+    ctx.font="12px sans-serif";
+    ctx.fillText(d.label, x+barWidth/2, ctx.canvas.height-5);
+    ctx.fillText(d.value.toFixed(1), x+barWidth/2, ctx.canvas.height-height-25);
+  });
 }
 
-// === 最後の選手を削除 ===
-document.getElementById("removeRowBtn").addEventListener("click", () => {
-  const rows = Array.from(document.querySelectorAll("#blastTable tbody tr"));
-  if (rows.length < 2) return;
-  const lastComment = rows.pop();
-  const lastRow = rows.pop();
-  if (lastRow && lastComment && lastComment.classList.contains("comment-row")) {
-    lastRow.remove();
-    lastComment.remove();
-    updateAverages();
-  }
-});
+// === CSV ===
+function downloadCSV(){
+  let csv = "学年,氏名,BatSpeed,AttackAngle,TimeToContact,RefSpeed,コメント\n";
+  document.querySelectorAll("#tableBody tr:not(.comment-row)").forEach(row=>{
+    const grade = row.querySelector(".grade")?.value || "";
+    const name = row.querySelector("input[type=text]")?.value || "";
+    const s1 = row.querySelector(".batSpeed")?.value || "";
+    const s2 = row.querySelector(".attackAngle")?.value || "";
+    const s3 = row.querySelector(".timeContact")?.value || "";
+    const s4 = row.querySelector(".refSpeed")?.textContent || "";
+    const comment = row.nextElementSibling?.querySelector(".comment")?.textContent || "";
+    csv += `${grade},${name},${s1},${s2},${s3},${s4},"${comment}"\n`;
+  });
+  const blob = new Blob([csv], {type:"text/csv"});
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "blast_record.csv";
+  link.click();
+}
 </script>
 </body>
 </html>

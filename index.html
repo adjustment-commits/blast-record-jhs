@@ -359,55 +359,68 @@ function evaluate(batSpeed, attack, ttc) {
   if (attack < 0)
     hit = "バットがボールの上から入りゴロ傾向。押し込み不足。";
   else if (attack >= 0 && attack < 7)
-    hit = "低角度スイングでゴロが多くなりやすい。";
+    hit = "低角度スイングでゴロ傾向。角度は控えめ。";
   else if (attack >= 7 && attack <= 15)
-    hit = "理想的な打球角度（7〜15°）。強いライナーが出やすい。";
+    hit = "理想的な打球角度（7〜15°）。力強いライナーが出やすい。";
   else if (attack > 15 && attack <= 22)
-    hit = "やや上方向のスイングで高めの打球傾向。";
+    hit = "上方向のスイングで高めの打球傾向。";
   else if (attack > 22)
-    hit = "強いアッパー軌道でフライ・空振りが増えやすい。";
+    hit = "アッパー傾向。打球が上がりすぎやすい。";
+  else
+    hit = "スイング角度のデータ不足。打球方向の再確認が必要。";
 
   // --- 動作傾向 ---
-  if (batSpeed < 75 && attack < 7)
-    move = "出力不足で下半身始動が遅れ、スイングが小さい。";
-  else if (batSpeed < 75 && attack > 15)
-    move = "上体主導で持ち上げる動き。胸郭の早開き傾向。";
-  else if (batSpeed >= 75 && batSpeed < 85 && attack >= 7 && attack <= 15)
-    move = "出力と角度の整合性が良い。安定したスイング。";
-  else if (batSpeed >= 85 && attack > 15)
-    move = "高出力だがアッパー傾向。胸郭が先行している。";
-  else if (batSpeed >= 85 && attack >= 7 && attack <= 15)
-    move = "強く、再現性の高いスイングゾーン。";
+  if (isNaN(batSpeed) || isNaN(attack)) {
+    move = "データ不足。次回測定で再確認。";
+  } else if (batSpeed < 70) {
+    move = "出力が不足。力を出し切れていない。下半身始動が遅れがち。";
+  } else if (batSpeed >= 70 && batSpeed < 80) {
+    if (attack < 7) move = "下半身の押し込み弱く、スイングが浅い。";
+    else if (attack > 15) move = "上体主導。持ち上げる動きが強い。";
+    else move = "出力と角度が整いつつある。再現性を高めたい段階。";
+  } else if (batSpeed >= 80 && batSpeed < 90) {
+    if (attack < 5) move = "力感はあるが方向性が安定しない。押し込みタイミングを修正。";
+    else if (attack > 18) move = "強い出力だが、上方向への逃げがある。胸郭が先行。";
+    else move = "出力と角度の整合性が高い。実戦でも結果を出せるスイングゾーン。";
+  } else if (batSpeed >= 90) {
+    if (attack < 7) move = "高出力だが角度が低く、差し込まれやすい。";
+    else if (attack > 18) move = "出力先行でやや力み気味。軸バランスを再確認。";
+    else move = "強く、安定性のある理想的なスイング。";
+  }
 
   // --- 反応 × タイミング ---
   if (!isNaN(ttc)) {
-    if (attack >= 7 && attack <= 15 && ttc >= 0.17 && ttc <= 0.21)
-      move += "タイミングも安定している。";
-    else if (attack >= 7 && attack <= 15 && ttc > 0.22)
-      move += "始動が遅れがち。差し込まれやすい。";
-    else if (attack > 15 && ttc < 0.18)
-      move += "始動が早すぎて溜め不足。前のめり気味。";
-    else if (attack < 5 && ttc < 0.18)
-      move += "突っ込み気味の下方向スイング。";
+    if (ttc < 0.17)
+      move += " 始動が早め。前のめり傾向。";
+    else if (ttc > 0.23)
+      move += " 始動が遅れがち。差し込みリスクあり。";
+    else
+      move += " タイミングが安定している。";
   }
 
   // --- フィジカル課題 ---
-  if (batSpeed < 75 && attack < 5)
-    body = "股関節と下半身強化。股関節の受け止め方・地面反力系の取り組み推奨。";
-  else if (batSpeed >= 75 && batSpeed < 85 && ttc > 0.22)
-    body = "軸安定と腹斜筋の動きを改善。骨盤先行と胸郭遅延の強化。";
-  else if (batSpeed >= 85 && attack > 15)
-    body = "胸郭と肩甲骨の制御。捻転コントロール・胸郭連動系トレーニング。";
-  else if (batSpeed >= 80 && attack >= 7 && attack <= 15 && ttc < 0.21)
-    body = "出力・角度・反応が整っており、全てのトレーニングで動きの再現性向上フェーズ。";
+  if (isNaN(batSpeed)) {
+    body = "データ未入力。筋出力・安定性の確認が必要。";
+  } else if (batSpeed < 75) {
+    body = "下半身と股関節の出力不足。地面反力系トレーニング推奨。";
+  } else if (batSpeed >= 75 && batSpeed < 85) {
+    if (ttc > 0.22)
+      body = "腹斜筋と体幹の安定強化。骨盤先行と胸郭遅延を意識。";
+    else
+      body = "出力は安定。動作連動を高めたい段階。";
+  } else if (batSpeed >= 85 && attack > 15) {
+    body = "胸郭と肩甲骨の制御が課題。捻転差と胸郭連動トレーニングを推奨。";
+  } else {
+    body = "全体のバランス良好。反応速度と再現性の向上フェーズ。";
+  }
 
   // --- 意図的修正リスク ---
   if (attack < 7)
-    risk = "ゴロ修正で角度を上げようとすると、上体が早く起きてフライが増える。押し出しを意識。";
+    risk = "角度を上げようとすると上体が起き、フライが増える。下半身主導で押し出す。";
   else if (attack > 15)
-    risk = "フライ修正でスイングを浅くすると、力が前で切れる。押し込み位置を意識。";
+    risk = "角度を抑えようとすると力が前で切れる。押し込み位置を意識。";
   else
-    risk = "好調時のスイングを変えると崩れる。リズム再現を優先。";
+    risk = "良い状態。スイングリズムを崩さないことが重要。";
 
   return `
     <span class="type comment-type-hit">［打球傾向］${hit}</span>

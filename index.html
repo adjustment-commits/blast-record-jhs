@@ -490,25 +490,57 @@ function downloadCSV(){
   link.click();
 }
   
-// === 手動保存・復元・リセット ===
+// === 手動保存・復元・リセット（JSON版） ===
 function saveData() {
-  localStorage.setItem("blastTableData", tableBody.innerHTML);
+  const rows = Array.from(document.querySelectorAll("#tableBody tr:not(.comment-row)"));
+  const data = rows.map(row => ({
+    grade: row.querySelector(".grade")?.value || "",
+    name: row.querySelector("input[type=text]")?.value || "",
+    batSpeed: parseFloat(row.querySelector(".batSpeed")?.value) || null,
+    attackAngle: parseFloat(row.querySelector(".attackAngle")?.value) || null,
+    timeContact: parseFloat(row.querySelector(".timeContact")?.value) || null
+  }));
+  localStorage.setItem("blastRecords", JSON.stringify(data));
   alert("データを保存しました。");
 }
 
 function loadData() {
-  const saved = localStorage.getItem("blastTableData");
-if (saved) {
-  tableBody.innerHTML = saved;
+  const saved = localStorage.getItem("blastRecords");
+  if (!saved) return alert("保存データはありません。");
+
+  const data = JSON.parse(saved);
+  tableBody.innerHTML = ""; // 初期化
+
+  data.forEach(d => {
+    const newRow = document.createElement("tr");
+    newRow.innerHTML = `
+      <td><select class="grade">
+        <option value="1年" ${d.grade==="1年"?"selected":""}>1年</option>
+        <option value="2年" ${d.grade==="2年"?"selected":""}>2年</option>
+        <option value="3年" ${d.grade==="3年"?"selected":""}>3年</option>
+      </select></td>
+      <td><input type="text" value="${d.name || ""}"></td>
+      <td><input type="number" step="0.1" class="batSpeed" value="${d.batSpeed || ""}"></td>
+      <td><input type="number" step="0.1" class="attackAngle" value="${d.attackAngle || ""}"></td>
+      <td><input type="number" step="0.001" class="timeContact" value="${d.timeContact || ""}"></td>
+      <td class="refSpeed">-</td>`;
+    const commentRow = document.createElement("tr");
+    commentRow.className = "comment-row";
+    commentRow.innerHTML = `<td colspan="6" class="comment">-</td>`;
+    tableBody.appendChild(newRow);
+    tableBody.appendChild(commentRow);
+
+    // 評価コメントを再生成
+    updateRow(newRow);
+  });
+
   alert("保存データを復元しました。");
-  document.querySelectorAll("#tableBody tr:not(.comment-row)").forEach(applyGradeToRow);
   updateAverages();
-}
 }
 
 function resetData() {
   if (confirm("すべてのデータを削除します。よろしいですか？")) {
-    localStorage.removeItem("blastTableData");
+    localStorage.removeItem("blastRecords");
     location.reload();
   }
 }

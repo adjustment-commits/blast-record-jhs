@@ -23,38 +23,27 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <style>
-/* =========================================================
-   BLASTスイング記録｜iPad mini6対応・PWA安定完全CSS
-   ========================================================= */
-
-/* --- 全体リセット＆安全設定 --- */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  max-width: 100%;
   font-family: "Noto Sans JP", sans-serif;
   background: #fff;
   color: #222;
-  overscroll-behavior-x: none;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  overflow-anchor: none; /* Safariの微振動防止 */
+  overscroll-behavior-x: none;
 }
 
-/* --- メインスクロール領域のみ制御 --- */
 #viewport-lock {
   width: 100%;
   height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }
 
-/* --- メインエリア --- */
 main {
   width: 94%;
   max-width: 800px;
@@ -62,7 +51,6 @@ main {
   padding: 15px 10px 60px;
 }
 
-/* --- タイトル --- */
 h1 {
   text-align: center;
   color: #009e60;
@@ -70,7 +58,6 @@ h1 {
   font-size: 1.4rem;
 }
 
-/* --- 入力欄エリア --- */
 #metaBox {
   text-align: center;
   margin-bottom: 15px;
@@ -83,7 +70,6 @@ h1 {
   border-radius: 4px;
 }
 
-/* --- テーブル構造 --- */
 #blastTable {
   display: block;
   width: 100%;
@@ -114,40 +100,28 @@ th {
   position: sticky;
   top: 0;
   z-index: 2;
-  background-clip: padding-box;
 }
 
-/* --- コメント行 --- */
 .comment-row td {
   background: #fafafa;
   font-size: 0.8rem;
   text-align: left;
-  line-height: 1.6;
+  line-height: 1.7;
   padding: 6px 10px;
   border-top: none;
   color: #333;
 }
 
-/* --- テーブル列幅（全列均等） --- */
-#blastTable th,
-#blastTable td {
-  width: 16.6%; /* 6列均等で100% */
+/* コメント分類デザイン */
+.comment-row .type {
+  display: block;
+  margin-bottom: 4px;
 }
+.comment-type-hit { color: #00695c; font-weight: bold; }
+.comment-type-move { color: #1b5e20; }
+.comment-type-body { color: #33691e; font-weight: bold; }
+.comment-type-risk { color: #c62828; font-weight: bold; }
 
-/* --- 入力欄調整（セル幅にフィット） --- */
-#blastTable input[type="text"],
-#blastTable input[type="number"],
-#blastTable select.grade {
-  width: 90%;
-  max-width: none;
-  box-sizing: border-box;
-  padding: 3px 5px;
-  font-size: 0.8rem;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-}
-
-/* --- ボタン --- */
 button {
   background: #009e60;
   color: #fff;
@@ -161,7 +135,6 @@ button {
 }
 button:hover { background: #00784a; }
 
-/* --- 平均値エリア --- */
 #averageBox {
   text-align: center;
   margin-top: 15px;
@@ -170,7 +143,6 @@ button:hover { background: #00784a; }
   line-height: 1.8;
 }
 
-/* --- グラフ --- */
 .chart-container {
   width: 100%;
   max-width: 700px;
@@ -183,7 +155,6 @@ canvas {
   display: block;
 }
 
-/* --- レスポンシブ（スマホ対応） --- */
 @media (max-width: 600px) {
   th, td { font-size: 0.8rem; padding: 4px; }
   button { padding: 6px 12px; font-size: 0.8rem; }
@@ -282,7 +253,7 @@ document.addEventListener("change", e => {
   if (e.target.classList.contains("grade")) applyGradeToRow(e.target.closest("tr"));
 });
 
-// === PWA対応：選手追加・削除（iPad二重発火防止） ===
+// === PWA対応：選手追加・削除 ===
 const addBtn = document.getElementById("addRowBtn");
 const removeBtn = document.getElementById("removeRowBtn");
 
@@ -342,7 +313,7 @@ function updateRow(row) {
   else refCell.textContent = "-";
 
   if (!isNaN(batSpeed) && !isNaN(attack) && commentRow)
-    commentRow.querySelector(".comment").textContent = evaluate(batSpeed, attack, ttc);
+    commentRow.querySelector(".comment").innerHTML = evaluate(batSpeed, attack, ttc);
   else if (commentRow) commentRow.querySelector(".comment").textContent = "-";
 }
 
@@ -387,15 +358,14 @@ function evaluate(batSpeed, attack, ttc) {
   }
 
   // --- フィジカル課題 ---
- // === フィジカル課題マッピング（修正版） ===
-if (batSpeed < 75 && attack < 5)
-  body = "股関節と下半身強化。股関節の受け止め方・地面反力系の取り組み推奨。";
-else if (batSpeed >= 75 && batSpeed < 85 && ttc > 0.22)
-  body = "軸安定と腹斜筋の動きを改善。骨盤先行と胸郭遅延の強化。";
-else if (batSpeed >= 85 && attack > 15)
-  body = "胸郭と肩甲骨の制御。捻転コントロール・胸郭連動系トレーニング。";
-else if (batSpeed >= 80 && attack >= 7 && attack <= 15 && ttc < 0.21)
-  body = "出力・角度・反応が整っており、全てのトレーニングで動きの再現性向上フェーズ。";
+  if (batSpeed < 75 && attack < 5)
+    body = "股関節と下半身強化。股関節の受け止め方・地面反力系の取り組み推奨。";
+  else if (batSpeed >= 75 && batSpeed < 85 && ttc > 0.22)
+    body = "軸安定と腹斜筋の動きを改善。骨盤先行と胸郭遅延の強化。";
+  else if (batSpeed >= 85 && attack > 15)
+    body = "胸郭と肩甲骨の制御。捻転コントロール・胸郭連動系トレーニング。";
+  else if (batSpeed >= 80 && attack >= 7 && attack <= 15 && ttc < 0.21)
+    body = "出力・角度・反応が整っており、全てのトレーニングで動きの再現性向上フェーズ。";
 
   // --- 意図的修正リスク ---
   if (attack < 7)
@@ -504,7 +474,7 @@ function downloadCSV(){
     const s2=row.querySelector(".attackAngle")?.value||"";
     const s3=row.querySelector(".timeContact")?.value||"";
     const s4=row.querySelector(".refSpeed")?.textContent||"";
-    const comment=row.nextElementSibling?.querySelector(".comment")?.textContent||"";
+    const comment=row.nextElementSibling?.querySelector(".comment")?.innerText||"";
     csv+=`${grade},${name},${s1},${s2},${s3},${s4},"${comment}"\n`;
   });
   const blob=new Blob([csv],{type:"text/csv"});
@@ -526,5 +496,6 @@ function adjustCanvasSize() {
 window.addEventListener('load', adjustCanvasSize);
 window.addEventListener('resize', adjustCanvasSize);
 </script>
+
 </body>
 </html>

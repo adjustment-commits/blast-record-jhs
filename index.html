@@ -610,8 +610,14 @@ function adjustCanvasSize() {
     c.height = parentWidth * 0.6;
   });
 }
+
 window.addEventListener('load', adjustCanvasSize);
 window.addEventListener('resize', adjustCanvasSize);
+
+window.addEventListener('load', () => {
+  adjustCanvasSize();
+  updateAverages(); // これで初期表示もされる！
+});
 </script>
 
 </body>
